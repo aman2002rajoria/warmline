@@ -110,8 +110,13 @@ export function seedTestData() {
     return rec;
   });
 
-  const write = (f: string, d: unknown) => fs.writeFileSync(f, JSON.stringify(d, null, 2));
-  write(TEST_PATHS.generatedEmails, records);
+  // Write to a temp file and rename, so a page reading at the same moment never sees half a file.
+  const write = (f: string, d: unknown) => {
+    const tmp = `${f}.${process.pid}.${Date.now()}.tmp`;
+    fs.writeFileSync(tmp, JSON.stringify(d, null, 2));
+    fs.renameSync(tmp, f);
+  };
   write(TEST_PATHS.sentLogs, sent);
   write(TEST_PATHS.failedLogs, failed);
+  write(TEST_PATHS.generatedEmails, records); // last: its presence means the seed is complete
 }
