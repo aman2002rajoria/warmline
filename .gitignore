@@ -1,0 +1,50 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Next.js
+.next
+out
+build
+dist
+
+# Logs
+*.log
+.DS_Store
+
+# Environment (optional)
+.env
+.env.local
+.env*.local
+
+# YOUR DATA — never share publicly
+data/settings.json
+data/generated_emails.json
+data/sent_logs.json
+data/failed_logs.json
+data/cache.json
+data/professors.xlsx
+
+# Keep folder structure
+!data/.gitkeep
+
+# Uploaded user files
+uploads/resumes/*
+uploads/excel/*
+!uploads/resumes/.gitkeep
+!uploads/excel/.gitkeep
+
+# Generated logs
+logs/*
+!logs/.gitkeep
+
+# IDE
+.idea
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# OS
+Thumbs.db
+data/test-mode/

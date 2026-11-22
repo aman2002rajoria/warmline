@@ -1,0 +1,48 @@
+# Warmline: research outreach that reads warm
+
+A localhost tool for sending personal research-internship emails to professors. You import a sheet of professors. Gemini writes two or three personal lines for each one, and the rest comes from your own template. You review every draft, and approved emails go out one at a time from your Gmail with your resume attached.
+
+## Features
+- **Import:** Excel sheet (name, university, email, plus optional research area, department, lab website, notes).
+- **AI drafts:** Gemini 2.5 Flash writes only the personal lines. The UI shows what Gemini read, labels the lines AI, highlights them inside the email, and explains them ("Why this?").
+- **Human approval:** nothing sends without a click. Bulk send only sends approved drafts, at a set delay and per-run limit.
+- **History:** every send and failure, with reasons, plus the app and error logs.
+- **Settings:** Gemini key, Gmail app password, resume upload, template editor (warns about leftover placeholders), and a live "Check setup".
+- **Test data mode:** sample professors, simulated Gemini and simulated sends. Nothing is emailed, and it never touches your real data.
+
+## Architecture
+```
+Browser (Next.js App Router, React, Tailwind)
+  │  pages: / (Overview), /professors, /logs (History), /settings
+  ▼
+API routes (app/api/*)  ── Node runtime
+  ├─ professors CRUD, personalize (Gemini), draft rebuild
+  ├─ email/send (bulk, throttled), email/test
+  ├─ excel/upload, resume/upload, settings, test-config, test-mode
+  ▼
+Services: gemini.service · email.service (nodemailer, Gmail SMTP) · excel.service (xlsx)
+  ▼
+Storage: plain files, no database
+  data/settings.json · data/generated_emails.json · data/*_logs.json
+  data/test-mode/ (test data) · uploads/ (resume, sheets) · logs/
+```
+- **Status flow:** `pending → drafted → approved → sent | failed`
+- **Test mode:** the `warmline_test` cookie points the stores at `data/test-mode/` and stubs Gemini and SMTP (`lib/test-mode.ts`).
+- **Design system:** the portfolio brief. Fira Sans 900/400, white cards on `#FAFAFB`, a single blue accent `#2F6BFF`, pill buttons with a 3D lip, and Lucide icons. The tokens are in `app/globals.css` and `tailwind.config.ts`; the components are in `components/ui/`.
+
+## Stack
+Next.js 14, TypeScript, Tailwind, Radix Dialog, Sonner, Google Generative AI SDK, Nodemailer, SheetJS.
+
+## Run
+```bash
+npm install
+npm run dev        # http://localhost:3000
+```
+Then add a Gemini key, a Gmail app password and your resume in Settings, or click "Try with test data".
+
+## Folder map
+- `app/`: pages and API routes
+- `components/`: UI kit (`ui/`), Professors screen (`professors/`), Settings, History, top bar, test mode
+- `lib/`: file stores, paths, setup status, formatting, test mode
+- `services/`: Gemini, email, Excel, config test
+- `templates/`, `docs/`, `scripts/`: the default template, guides, setup scripts
