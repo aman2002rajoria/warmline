@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { cookies } from "next/headers";
-import { PATHS } from "./paths";
+import { PATHS, PUBLIC_DEMO } from "./paths";
 import { renderTemplate } from "./utils";
 import type { LogEntry, ProfessorRecord } from "@/types";
 
@@ -23,6 +23,11 @@ export const TEST_PATHS = {
 };
 
 export function isTestMode(): boolean {
+  if (PUBLIC_DEMO) {
+    // The public demo is always on test data, built the first time it's needed.
+    if (!fs.existsSync(TEST_PATHS.generatedEmails)) seedTestData();
+    return true;
+  }
   try {
     return cookies().get(TEST_COOKIE)?.value === "1";
   } catch {

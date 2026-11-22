@@ -3,6 +3,7 @@ import { getSetupStatus } from "@/lib/setup-status";
 import { Chip } from "@/components/ui/chip";
 import { isTestMode } from "@/lib/test-mode";
 import { TestModeMenu } from "@/components/test-mode";
+import { PUBLIC_DEMO } from "@/lib/paths";
 
 /** Sticky top bar (§7, ref 08): app mark, name, tagline; setup status on the right. */
 export function TopBar() {
@@ -21,7 +22,7 @@ export function TopBar() {
         </Link>
         <div className="flex items-center gap-3">
           {isTestMode() ? (
-            <TestModeMenu />
+            <TestModeMenu publicDemo={PUBLIC_DEMO} />
           ) : (
           <Link href="/settings" className="shrink-0">
             {setup.ready ? (
