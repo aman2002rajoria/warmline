@@ -283,7 +283,7 @@ export function SettingsClient({ initial, testMode }: { initial: AppSettings; te
                   id="senderName"
                   value={form.senderName}
                   onChange={(e) => set("senderName", e.target.value)}
-                  placeholder="Aman Rajoria"
+                  placeholder="Your name"
                 />
               </Field>
               <Field label="Reply-to (optional)" htmlFor="replyTo" help="If replies should go to another address.">
