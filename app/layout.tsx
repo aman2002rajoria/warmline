@@ -4,6 +4,7 @@ import "./globals.css";
 import { TopBar } from "@/components/top-bar";
 import { THEME_SCRIPT } from "@/components/theme-toggle";
 import { Toaster } from "@/components/ui/feedback";
+import { Analytics } from "@vercel/analytics/next";
 
 const fira = Fira_Sans({
   subsets: ["latin"],
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </main>
         <Toaster />
+        <Analytics />
       </body>
     </html>
   );
