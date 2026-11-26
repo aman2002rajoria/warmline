@@ -15,11 +15,17 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   try {
     const { searchParams } = new URL(req.url);
     const force = searchParams.get("force") === "1";
+    const sent = (await req.json().catch(() => ({}))) as { template?: { subject?: unknown; body?: unknown } };
+    const template =
+      typeof sent.template?.subject === "string" && typeof sent.template?.body === "string" && sent.template.body.includes("{{personalized_lines}}")
+        ? { subject: sent.template.subject.slice(0, 300), body: sent.template.body.slice(0, 6000) }
+        : undefined;
 
     const p = getProfessor(params.id);
     if (!p) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     let lines = p.personalizedLines || null;
+    let aiSubject: string | undefined;
     if (!lines || force) {
       const result = await generatePersonalization(
         {
@@ -31,15 +37,18 @@ export async function POST(req: NextRequest, { params }: Ctx) {
           researchArea: p.researchArea,
           notes: p.notes,
         },
-        { force },
+        { force, apiKey: req.headers.get("x-gemini-key") || undefined },
       );
       lines = result.lines;
+      aiSubject = result.subject;
     }
 
     const { subject, body } = buildEmail({
       professorName: p.professorName,
       university: p.university,
       personalizedLines: lines || "",
+      subject: aiSubject,
+      template,
     });
 
     const updated = updateProfessor(p.id, {

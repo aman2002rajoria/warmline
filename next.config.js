@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // The list screen is now People; old links keep working.
+  async redirects() {
+    return [{ source: "/professors", destination: "/people", permanent: false }];
+  },
   experimental: {
     serverComponentsExternalPackages: ["nodemailer"],
     // Files the server reads at runtime, so they ship with the Vercel functions.

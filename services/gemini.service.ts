@@ -1,4 +1,4 @@
-import { isTestMode, fakeLines } from "@/lib/test-mode";
+import { isTestMode, fakeLines, fakeSubject } from "@/lib/test-mode";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getSettings } from "@/lib/settings-store";
 import { getCache, setCache } from "@/lib/cache-store";
@@ -20,39 +20,57 @@ export interface PersonalizationInput {
 
 export interface PersonalizationResult {
   lines: string;
+  /** A subject line written for this person (AI), when there's something specific to point at. */
+  subject?: string;
   model: string;
   generatedAt: string;
   fromCache: boolean;
 }
 
-const SYSTEM_PROMPT = `You are helping personalize research internship cold emails.
+const SYSTEM_PROMPT = `You are helping personalise cold outreach emails: to a possible customer, partner,
+investor, guest, hire or mentor. The sender is writing to someone they don't know yet.
 
-Your job: produce EXACTLY 2 (max 3) concise personalized sentences that will be
-inserted into a fixed email template between the greeting and the rest of the body.
+Your job: produce EXACTLY 2 (max 3) concise personal sentences that will be inserted into
+a fixed email template right after the greeting.
 
 STRICT RULES:
-- Mention the professor's research/lab focus naturally.
-- Sound like a thoughtful undergraduate, NOT marketing copy.
-- Keep tone formal, factual, concise.
-- Avoid exaggerated praise ("groundbreaking", "world-class", "pioneering", "deeply inspiring", "fascinating", etc.).
-- Avoid AI-sounding stock phrases ("I am writing to express", "I am reaching out because", "I would like to take this opportunity").
-- Do NOT invent specific papers, results, datasets, or numbers. Stay general if you don't know specifics.
+- Open with one real, specific thing about the person's work (the "hook"), taken only from the details given.
+- Sound like a thoughtful person who did their homework, NOT marketing copy.
+- Keep the tone warm, plain and concise.
+- Avoid exaggerated praise ("groundbreaking", "world-class", "incredible", "deeply inspiring", "fascinating", etc.).
+- Avoid stock phrases ("I am writing to express", "I hope this email finds you well", "I wanted to reach out").
+- Do NOT invent facts, posts, talks, numbers or results. If the details are thin, stay general.
 - Do NOT mention you used AI.
-- Do NOT include greetings, closings, or the professor's name (those exist in the surrounding template).
-- Keep total output under 60 words.
+- Do NOT include greetings, sign-offs, the person's name or the ask (the template has those).
+- Keep total output under 50 words.
 - Return ONLY the 2-3 sentences as plain text. No quotes, no bullets, no labels, no markdown.`;
+
+const SUBJECT_PROMPT = `Write ONE email subject line for a cold email to this person.
+- Under 8 words, sentence case, no emojis, no clickbait, no ALL CAPS.
+- Point at the same specific thing the personal lines mention, so it's clearly written for them.
+- It may start with their first name. No "Re:" or "Fwd:".
+Return only the subject line.`;
 
 function buildUserPrompt(p: PersonalizationInput): string {
   const lines = [
-    `Professor: ${p.professorName}`,
-    `University: ${p.university}`,
+    `Person: ${p.professorName}`,
+    `Company or organisation: ${p.university}`,
   ];
-  if (p.department) lines.push(`Department: ${p.department}`);
-  if (p.researchArea) lines.push(`Stated research area: ${p.researchArea}`);
-  if (p.labWebsite) lines.push(`Lab website: ${p.labWebsite}`);
-  if (p.notes) lines.push(`Extra notes provided by user: ${p.notes}`);
+  if (p.department) lines.push(`Role: ${p.department}`);
+  if (p.researchArea) lines.push(`What they work on: ${p.researchArea}`);
+  if (p.labWebsite) lines.push(`Link: ${p.labWebsite}`);
+  if (p.notes) lines.push(`Sender's notes about them: ${p.notes}`);
   lines.push("", "Write the 2-3 personalized sentences now.");
   return lines.join("\n");
+}
+
+/** Google's errors, in plain words. */
+export function friendlyGeminiError(err: unknown): string {
+  const m = (err as Error)?.message || String(err);
+  if (/API[_ ]?key|API_KEY_INVALID|\[400|\[401|\[403|PERMISSION_DENIED/i.test(m)) return "Google didn't accept that Gemini key. Check it in Settings.";
+  if (/\[429|quota|RESOURCE_EXHAUSTED/i.test(m)) return "That Gemini key is out of free quota for now. Try again in a minute.";
+  if (/fetch failed|ENOTFOUND|ECONN/i.test(m)) return "Couldn't reach Gemini. Check the connection and try again.";
+  return m;
 }
 
 function sanitize(text: string): string {
@@ -70,14 +88,17 @@ function sanitize(text: string): string {
 
 export async function generatePersonalization(
   input: PersonalizationInput,
-  opts: { force?: boolean } = {},
+  opts: { force?: boolean; apiKey?: string } = {},
 ): Promise<PersonalizationResult> {
-  if (isTestMode()) {
+  // A visitor's own key (sent with this request from their browser, never saved): real Gemini lines,
+  // even in the test-data demo. Without one, test mode writes canned lines.
+  const ownKey = opts.apiKey?.trim();
+  if (isTestMode() && !ownKey) {
     await new Promise((r) => setTimeout(r, 1200));
-    return { lines: fakeLines(input), model: "test-mode", generatedAt: new Date().toISOString(), fromCache: false };
+    return { lines: fakeLines(input), subject: fakeSubject(input), model: "test-mode", generatedAt: new Date().toISOString(), fromCache: false };
   }
 
-  if (!opts.force) {
+  if (!opts.force && !ownKey) {
     const cached = getCache(input.email);
     if (cached) {
       return {
@@ -90,14 +111,15 @@ export async function generatePersonalization(
   }
 
   const s = getSettings();
-  if (!s.geminiApiKey) {
+  const key = ownKey || s.geminiApiKey;
+  if (!key) {
     throw new Error(
-      "Gemini API key is not configured. Open Settings and paste your key.",
+      "No Gemini API key yet. Open Settings and paste your own key.",
     );
   }
 
   const modelId = normalizeGeminiModelId(s.geminiModel || DEFAULT_GEMINI_MODEL);
-  const genAI = new GoogleGenerativeAI(s.geminiApiKey);
+  const genAI = new GoogleGenerativeAI(key);
   const model = genAI.getGenerativeModel({
     model: modelId,
     systemInstruction: SYSTEM_PROMPT,
@@ -109,13 +131,24 @@ export async function generatePersonalization(
     const cleaned = sanitize(result.response.text());
     if (!cleaned) throw new Error("Empty response from Gemini.");
 
+    // A short subject line that points at the same hook (best effort: the template's subject is the fallback).
+    let subject: string | undefined;
+    try {
+      const sm = genAI.getGenerativeModel({ model: modelId, systemInstruction: SUBJECT_PROMPT, generationConfig: { temperature: 0.7, maxOutputTokens: 40 } });
+      const sr = await sm.generateContent(`${buildUserPrompt(input)}\n\nThe personal lines you wrote: ${cleaned}`);
+      subject = sanitize(sr.response.text()).replace(/^subject:\s*/i, "").slice(0, 90) || undefined;
+    } catch {
+      subject = undefined;
+    }
+
     const out: PersonalizationResult = {
       lines: cleaned,
+      subject,
       model: modelId,
       generatedAt: new Date().toISOString(),
       fromCache: false,
     };
-    setCache({
+    if (!ownKey) setCache({
       email: input.email,
       lines: cleaned,
       model: modelId,
@@ -127,19 +160,20 @@ export async function generatePersonalization(
       professor: input.professorName,
       err: (err as Error).message,
     });
-    throw err;
+    throw new Error(friendlyGeminiError(err));
   }
 }
 
 /** Quick connectivity probe — used by the Test Configuration button. */
-export async function pingGemini(): Promise<{ ok: boolean; message: string }> {
+export async function pingGemini(apiKey?: string): Promise<{ ok: boolean; message: string }> {
   const s = getSettings();
-  if (!s.geminiApiKey) {
+  const key = apiKey?.trim() || s.geminiApiKey;
+  if (!key) {
     return { ok: false, message: "Gemini API key is not set in Settings." };
   }
   try {
     const modelId = normalizeGeminiModelId(s.geminiModel || DEFAULT_GEMINI_MODEL);
-    const genAI = new GoogleGenerativeAI(s.geminiApiKey);
+    const genAI = new GoogleGenerativeAI(key);
     const model = genAI.getGenerativeModel({
       model: modelId,
       generationConfig: { maxOutputTokens: 8 },
@@ -147,10 +181,10 @@ export async function pingGemini(): Promise<{ ok: boolean; message: string }> {
     const r = await model.generateContent("Reply with the single word: OK");
     const text = r.response.text();
     if (text && text.length > 0) {
-      return { ok: true, message: `Gemini reachable (${modelId}).` };
+      return { ok: true, message: `Your key works (${modelId}).` };
     }
     return { ok: false, message: "Empty response from Gemini." };
   } catch (err) {
-    return { ok: false, message: (err as Error).message };
+    return { ok: false, message: friendlyGeminiError(err) };
   }
 }

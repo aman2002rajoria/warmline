@@ -17,19 +17,27 @@ export interface BuildEmailInput {
   professorName: string;
   university: string;
   personalizedLines: string;
+  /** An AI-written subject; the template's subject is used when it's missing. */
+  subject?: string;
+  /** A template chosen in Settings, used instead of the saved one. */
+  template?: { subject: string; body: string };
 }
 
 export function buildEmail(input: BuildEmailInput) {
   const s = getSettings();
   const vars = {
+    // general names, plus the original ones so older templates keep working
+    name: input.professorName,
+    first_name: (input.professorName || "").trim().split(/\s+/)[0],
+    company: input.university,
     professor_name: input.professorName,
     university: input.university,
     personalized_lines: input.personalizedLines,
   };
   const test = isTestMode();
   return {
-    subject: renderTemplate(test ? TEST_SUBJECT : s.subjectTemplate, vars),
-    body: renderTemplate(test ? TEST_TEMPLATE : s.bodyTemplate, vars),
+    subject: input.subject?.trim() || renderTemplate(input.template?.subject || (test ? TEST_SUBJECT : s.subjectTemplate), vars),
+    body: renderTemplate(input.template?.body || (test ? TEST_TEMPLATE : s.bodyTemplate), vars),
   };
 }
 

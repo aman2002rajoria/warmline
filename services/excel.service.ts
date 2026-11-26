@@ -7,12 +7,12 @@ import { logger } from "@/lib/logger";
 import type { ExcelImportResult } from "@/types";
 
 const COLUMN_ALIASES: Record<string, string[]> = {
-  professorName: ["professor_name", "name", "professor", "full_name", "professor name"],
-  university: ["university", "institution", "school", "college"],
-  email: ["email", "email_id", "professor_email", "contact_email"],
-  department: ["department", "dept"],
-  labWebsite: ["lab_website", "website", "url", "lab_url", "lab"],
-  researchArea: ["research_area", "research", "area", "topic", "focus", "research area"],
+  professorName: ["name", "full_name", "person", "contact", "professor_name", "professor", "professor name"],
+  university: ["company", "organisation", "organization", "org", "university", "institution", "school", "college"],
+  email: ["email", "email_id", "contact_email", "professor_email"],
+  department: ["role", "title", "job_title", "department", "dept"],
+  labWebsite: ["link", "website", "url", "linkedin", "lab_website", "lab_url", "lab"],
+  researchArea: ["works_on", "what_they_work_on", "focus", "topic", "area", "research_area", "research", "research area"],
   notes: ["notes", "note", "remarks", "comment", "comments"],
 };
 
@@ -68,11 +68,11 @@ export function parseExcelBuffer(buffer: Buffer): {
     const email = pickField(r, "email");
 
     if (!professorName) {
-      invalid.push({ row: rowNum, reason: "Missing professor_name" });
+      invalid.push({ row: rowNum, reason: "Missing name" });
       return;
     }
     if (!university) {
-      invalid.push({ row: rowNum, reason: "Missing university" });
+      invalid.push({ row: rowNum, reason: "Missing company" });
       return;
     }
     if (!email) {

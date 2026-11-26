@@ -10,8 +10,8 @@ import { Illustration, Working } from "@/components/ui/feedback";
 import { Modal } from "@/components/ui/modal";
 import { api } from "./api";
 
-const REQUIRED = ["professor_name", "university", "email"];
-const OPTIONAL = ["research_area", "department", "lab_website", "notes"];
+const REQUIRED = ["name", "company", "email"];
+const OPTIONAL = ["role", "works_on", "link", "notes"];
 
 export function ImportModal({
   open,
@@ -59,11 +59,11 @@ export function ImportModal({
       open={open}
       onOpenChange={close}
       wide
-      title={result ? "Sheet imported" : "Import professors"}
+      title={result ? "Sheet imported" : "Import people"}
       description={
         result
           ? undefined
-          : "One row per professor. Your list keeps existing drafts; a row with an email you already have updates that professor's details."
+          : "One row per person. Your list keeps existing drafts; a row with an email you already have updates that person's details."
       }
       footer={
         result ? (
@@ -161,7 +161,7 @@ export function ImportModal({
               ))}
             </div>
             <p className="text-body-s text-muted">
-              Blue ones are required. Research area and notes give Gemini something real to mention.{" "}
+              Blue ones are required. What they work on and your notes give Gemini something real to mention.{" "}
               <a href="/SAMPLE_EXCEL_FORMAT.xlsx" download className="link">
                 Download sample sheet ↓
               </a>

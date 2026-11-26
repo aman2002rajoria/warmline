@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     const data = await req.json();
     if (!data.professorName || !data.university || !data.email) {
       return NextResponse.json(
-        { error: "professorName, university and email are required" },
+        { error: "Name, company and email are required" },
         { status: 400 },
       );
     }
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     });
     if (!created) {
       return NextResponse.json(
-        { error: "Professor with that email already exists" },
+        { error: "Someone with that email is already in your list" },
         { status: 409 },
       );
     }

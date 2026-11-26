@@ -35,6 +35,10 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
       "finalBody",
       "status",
       "approved",
+      "scheduledAt",
+      "attachments",
+      "followUpAt",
+      "followUpSent",
     ];
     const patch: Partial<ProfessorRecord> = {};
     for (const k of allowed) {

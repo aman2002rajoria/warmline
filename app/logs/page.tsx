@@ -2,6 +2,8 @@ import { readSent, readFailed } from "@/lib/logs-store";
 import { tailLog } from "@/lib/logger";
 import { PATHS } from "@/lib/paths";
 import { LogsClient } from "@/components/logs-client";
+import { listProfessors } from "@/lib/professors-store";
+import { isTestMode } from "@/lib/test-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +19,8 @@ export default function LogsPage() {
       failed={failed}
       errorsLog={errorsLog}
       appLog={appLog}
+      people={listProfessors()}
+      testMode={isTestMode()}
     />
   );
 }

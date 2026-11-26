@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Fira_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { TopBar } from "@/components/top-bar";
-import { Nav } from "@/components/nav";
+import { THEME_SCRIPT } from "@/components/theme-toggle";
 import { Toaster } from "@/components/ui/feedback";
 
 const fira = Fira_Sans({
@@ -20,20 +20,20 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "Warmline",
-  description: "Personal research-internship emails to professors, sent from your own Gmail.",
+  description: "Cold outreach that reads warm: personal emails to anyone, approved by you and sent from your own Gmail.",
 };
 
 export const dynamic = "force-dynamic";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${fira.variable} ${mono.variable}`}>
+    <html lang="en" className={`${fira.variable} ${mono.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="min-h-screen">
         <TopBar />
-        <main className="mx-auto w-full max-w-app px-[clamp(20px,4vw,48px)] pb-24 pt-6">
-          <div className="mb-10">
-            <Nav />
-          </div>
+        <main className="mx-auto w-full max-w-app px-[clamp(20px,4vw,48px)] pb-16 pt-6">
           {children}
         </main>
         <Toaster />

@@ -2,6 +2,9 @@
 
 import { PenLine, Send, Trash2, X } from "lucide-react";
 import type { ProfessorRecord } from "@/types";
+import { Avatar } from "./draft-panel";
+import { REPLIES } from "@/lib/demo-people";
+import { Chip } from "@/components/ui/chip";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/field";
@@ -22,6 +25,7 @@ export function ProfessorList({
   onDelete,
   limits,
   filter,
+  filterBar,
 }: {
   rows: ProfessorRecord[];
   activeId: string | null;
@@ -36,6 +40,7 @@ export function ProfessorList({
   onDelete: () => void;
   limits: Limits;
   filter: Filter;
+  filterBar?: React.ReactNode;
 }) {
   const allChecked = rows.length > 0 && rows.every((r) => checked.has(r.id));
   const someChecked = rows.some((r) => checked.has(r.id));
@@ -53,7 +58,7 @@ export function ProfessorList({
   }
 
   return (
-    <section className="card rise rounded-l p-3" aria-label="Professors">
+    <section className="card rise flex flex-col rounded-l p-3 md:h-full" aria-label="People">
       <div className="flex min-h-[56px] items-center gap-1 px-1">
         <Checkbox
           label={allChecked ? "Unselect all shown" : "Select all shown"}
@@ -101,7 +106,8 @@ export function ProfessorList({
         </p>
       ) : null}
 
-      <ul className="flex max-h-none flex-col gap-1 overflow-y-auto md:max-h-[calc(100vh-300px)]">
+      {filterBar}
+      <ul className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
         {rows.map((r) => {
           const active = r.id === activeId;
           return (
@@ -119,7 +125,7 @@ export function ProfessorList({
                   }
                 }}
                 className={cn(
-                  "flex cursor-pointer items-start gap-1 rounded-m py-3 pl-1 pr-4 transition-colors",
+                  "flex cursor-pointer items-center gap-2 rounded-m py-2.5 pl-1 pr-3 transition-colors",
                   active ? "bg-surface" : "hover:bg-surface",
                 )}
               >
@@ -128,15 +134,14 @@ export function ProfessorList({
                   checked={checked.has(r.id)}
                   onChange={(on) => toggle(r.id, on)}
                 />
-                <div className="min-w-0 flex-1 pt-2">
-                  <div className="truncate text-[17px] font-extrabold leading-tight text-ink">
-                    {r.professorName}
+                <Avatar name={r.professorName} size={38} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-[16px] font-extrabold leading-tight text-ink">{r.professorName}</span>
+                    <RowChip r={r} />
                   </div>
-                  <div className="mt-1 truncate text-body-s text-muted">
-                    {[r.researchArea || r.department, r.university].filter(Boolean).join(" · ")}
-                  </div>
-                  <div className="mt-2">
-                    <StatusChip status={r.status} />
+                  <div className="mt-0.5 truncate text-body-s text-muted">
+                    {[r.department, r.university].filter(Boolean).join(" · ")}
                   </div>
                 </div>
               </div>
@@ -146,4 +151,12 @@ export function ProfessorList({
       </ul>
     </section>
   );
+}
+
+/** The most useful thing to know about a row: replied, scheduled or a follow-up due, else its status. */
+function RowChip({ r }: { r: ProfessorRecord }) {
+  if (r.status === "sent" && REPLIES.some((x) => x.who === r.professorName)) return <Chip tone="success">Replied</Chip>;
+  if (r.status === "approved" && r.scheduledAt) return <Chip tone="accent">Scheduled</Chip>;
+  if (r.status === "sent" && r.followUpAt && !r.followUpSent) return <Chip tone="warning">Follow up</Chip>;
+  return <StatusChip status={r.status} />;
 }

@@ -26,6 +26,13 @@ export interface ProfessorRecord {
 
   status: ProfessorStatus;
   approved?: boolean;
+  /** Approved drafts can wait for a chosen time. */
+  scheduledAt?: string | null;
+  /** Files attached to this one email (name and size; the demo never uploads them). */
+  attachments?: { name: string; size: number }[];
+  /** When to nudge someone who hasn't replied, and whether the nudge went out. */
+  followUpAt?: string | null;
+  followUpSent?: boolean;
   sentAt?: string | null;
   errorMessage?: string | null;
 

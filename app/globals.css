@@ -45,6 +45,40 @@
   --soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Tiles that lift off the page, as on the portfolio: a lit top edge, a hairline, layered soft shadows. */
+:root {
+  --shadow-flat: inset 0 2px 0 #fff, 0 0 0 1px rgba(16, 16, 24, 0.05), 0 1px 1px rgba(16, 16, 24, 0.05),
+    0 14px 26px -14px rgba(16, 16, 24, 0.16);
+}
+/* Dark, as on the portfolio: near-black page, graphite tiles with a rim of light on the top edge. */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0e0e11;
+  --card: #1b1b21;
+  --surface: #24242c;
+  --surface-2: #2d2d36;
+  --line: rgba(255, 255, 255, 0.08);
+  --ink: #f3f3f5;
+  --ink-2: #cacad2;
+  --muted: #9b9ba6;
+  --faint: #6f6f7a;
+  --accent-50: #141d42;
+  --accent-100: #1c2a63;
+  --accent-200: #2b43a3;
+  --accent-600: #5b8cff;
+  --accent-700: #9db7ff;
+  --accent-900: #d2deff;
+  --success-text: #4ade80;
+  --success-tint: #0f2e1d;
+  --warning-text: #fcd34d;
+  --warning-tint: #33280a;
+  --danger-text: #ff8a80;
+  --danger-tint: #3a1514;
+  --shadow-flat: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 1px 2px rgba(0, 0, 0, 0.6), 0 12px 24px -10px rgba(0, 0, 0, 0.85);
+  --shadow-float: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 0 1px var(--line), 0 24px 44px -20px rgba(0, 0, 0, 0.9);
+}
+
 html {
   background: var(--bg);
 }
@@ -80,7 +114,7 @@ body {
     font: 600 16px/1 var(--font);
     white-space: nowrap;
     background: var(--ink);
-    color: #fff;
+    color: var(--bg);
     cursor: pointer;
     box-shadow: 0 4px 0 #000, 0 12px 24px -12px rgba(0, 0, 0, 0.45);
     transition: transform 0.4s var(--spring), box-shadow 0.4s var(--spring);
@@ -96,6 +130,7 @@ body {
   }
   .btn.primary {
     background: var(--accent-500);
+    color: #fff;
     box-shadow: 0 4px 0 color-mix(in srgb, var(--accent-500) 65%, #000),
       0 12px 24px -12px var(--accent-500);
   }
@@ -104,7 +139,7 @@ body {
       0 16px 28px -12px var(--accent-500);
   }
   .btn.ghost {
-    background: #fff;
+    background: var(--card);
     color: var(--ink);
     box-shadow: inset 0 0 0 1.5px var(--surface-2), 0 4px 0 var(--surface-2);
   }
@@ -113,6 +148,7 @@ body {
   }
   .btn.danger {
     background: var(--danger);
+    color: #fff;
     box-shadow: 0 4px 0 var(--danger-text);
   }
   .btn.danger:hover {
@@ -135,10 +171,31 @@ body {
     height: 40px;
     padding: 0;
   }
+  /* Disabled: a flat, quiet pill in the theme's own surface colour, never a washed-out copy of the button. */
   .btn:disabled,
   .btn[aria-disabled="true"] {
-    opacity: 0.5;
+    background: var(--surface-2);
+    color: var(--faint);
+    box-shadow: none;
     pointer-events: none;
+  }
+  [data-theme="dark"] .btn {
+    box-shadow: 0 4px 0 #000, 0 12px 24px -12px rgba(0, 0, 0, 0.8);
+  }
+  [data-theme="dark"] .btn.ghost {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 4px 0 #000;
+  }
+  [data-theme="dark"] .btn.ghost:hover {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 0 0 1px rgba(255, 255, 255, 0.16), 0 6px 0 #000;
+  }
+  [data-theme="dark"] .btn.primary {
+    box-shadow: 0 4px 0 color-mix(in srgb, var(--accent-500) 45%, #000), 0 12px 26px -12px var(--accent-500);
+  }
+  [data-theme="dark"] .btn:disabled,
+  [data-theme="dark"] .btn[aria-disabled="true"] {
+    background: var(--surface);
+    color: var(--faint);
+    box-shadow: inset 0 0 0 1px var(--line);
   }
 
   .link {
@@ -303,3 +360,16 @@ body {
     transform: none;
   }
 }
+
+/* Light / dark switch and its sunset/sunrise transition, as on the portfolio */
+.theme-switch{width:52px;height:32px;border-radius:999px;background:var(--surface-2);position:relative;flex:none;box-shadow:inset 0 0 0 1px var(--line)}
+.theme-switch .knob{position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:var(--card);display:grid;place-items:center;box-shadow:0 2px 0 rgba(0,0,0,.25);transition:transform .45s var(--spring)}
+.theme-switch .knob.light{transform:translateX(20px)}
+.theme-switch:active .knob{scale:.9}
+.theme-switch .knob::before{content:"";width:12px;height:12px;border-radius:50%;background:transparent;box-shadow:inset -4px -2px 0 0 var(--ink);transition:box-shadow .4s,background .4s}
+.theme-switch .knob.light::before{width:10px;height:10px;background:#F5B323;box-shadow:0 0 0 3px color-mix(in srgb,#F5B323 30%,transparent)}
+html.theming,html.theming *{transition:background-color .45s ease,color .45s ease,border-color .45s ease,box-shadow .45s ease!important}
+::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
+html[data-vt=dark]::view-transition-old(root){z-index:2}
+html[data-vt=dark]::view-transition-new(root){z-index:1}
+html[data-vt=light]::view-transition-new(root){z-index:2}

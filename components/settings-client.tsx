@@ -7,23 +7,25 @@ import { toast } from "sonner";
 import type { AppSettings, TestConfigResult } from "@/types";
 import { cn } from "@/lib/utils";
 import { findPlaceholders } from "@/lib/template";
-import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { Field, Input, Textarea } from "@/components/ui/field";
-import { Segmented } from "@/components/ui/segmented";
 import { Illustration, Working } from "@/components/ui/feedback";
+import { OwnKeyCard } from "@/components/own-key-card";
+import { TemplateLibrary } from "@/components/template-library";
+import { SharedAttachmentCard } from "@/components/shared-attachment";
+import { ProfileCard } from "@/components/profile-card";
+import { GmailConnect } from "@/components/gmail-connect";
 
-type Tab = "gemini" | "gmail" | "resume" | "template" | "sending";
 
-const TOKENS = ["{{professor_name}}", "{{university}}", "{{personalized_lines}}"];
+const TOKENS = ["{{first_name}}", "{{name}}", "{{company}}", "{{personalized_lines}}"];
 
 export function SettingsClient({ initial, testMode }: { initial: AppSettings; testMode: boolean }) {
   const router = useRouter();
   const [form, setForm] = useState<AppSettings>(initial);
   const [saved, setSaved] = useState<AppSettings>(initial);
-  const [tab, setTab] = useState<Tab>("gemini");
+  const [newTemplate, setNewTemplate] = useState(false);
   const [saving, setSaving] = useState(false);
   const [checking, setChecking] = useState(false);
   const [check, setCheck] = useState<TestConfigResult | null>(null);
@@ -104,7 +106,7 @@ export function SettingsClient({ initial, testMode }: { initial: AppSettings; te
 
   async function uploadResume(file: File) {
     if (!/\.pdf$/i.test(file.name)) {
-      toast.error("Your resume needs to be a PDF.");
+      toast.error("The attachment needs to be a PDF.");
       return;
     }
     setUploading(true);
@@ -117,7 +119,7 @@ export function SettingsClient({ initial, testMode }: { initial: AppSettings; te
       set("resumePath", data.resumePath);
       setSaved((s) => ({ ...s, resumePath: data.resumePath }));
       router.refresh();
-      toast.success("Resume uploaded. It's attached to every email from now on.");
+      toast.success("Attachment uploaded. It goes with every email from now on.");
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
@@ -139,31 +141,50 @@ export function SettingsClient({ initial, testMode }: { initial: AppSettings; te
   }
 
   return (
-    <div className="max-w-read">
-      <PageHeader
-        title="Settings"
-        sub="Saved on this computer in data/settings.json. Your keys never leave it."
-      />
-
-      {testMode ? (
-        <div className="mb-6 rounded-m bg-warning-tint px-5 py-4 text-body-s text-warning-text">
-          You&rsquo;re in test mode, so these are your real settings, shown read-only. Switch to your
-          own data from the TEST DATA badge at the top to change them.
+    <div>
+      {/* The sender kit: a blue band, like the portfolio's, with the two things people come here to start */}
+      <section className="rise relative mb-8 overflow-hidden rounded-l bg-accent-500 p-6 text-white shadow-flat md:p-8">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/art/F2-draft.webp" alt="" width={180} height={180} className="pointer-events-none absolute -bottom-6 right-6 hidden h-[170px] w-auto rotate-[6deg] drop-shadow-[0_18px_22px_rgba(4,12,48,.45)] md:block" />
+        <div className="md:pr-[220px]">
+          <div className="text-label font-extrabold uppercase tracking-[.08em] text-white/80">Settings</div>
+          <h1 className="mt-2 text-h1 text-white">Your sender kit</h1>
+          <p className="mt-3 max-w-[58ch] text-body-l text-white/90">The template, the file and the signature that go with every email. Keys and sending limits are further down, for later.</p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <a href="/people?new=1" className="btn !bg-white !text-[#1A3FA8] !shadow-[0_4px_0_rgba(4,12,48,.35)]">New campaign</a>
+            <button type="button" className="btn !bg-transparent !text-white !shadow-[inset_0_0_0_1.5px_rgba(255,255,255,.75)] hover:!bg-white/10" onClick={() => { setNewTemplate(true); document.getElementById("templates")?.scrollIntoView({ behavior: "smooth" }); }}>
+              New template
+            </button>
+          </div>
         </div>
-      ) : null}
+      </section>
 
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <Button variant="primary" onClick={() => save()} disabled={saving || !dirty || testMode}>
-          <Save size={20} strokeWidth={1.75} /> {dirty ? "Save settings" : "All saved"}
-        </Button>
-        <Button variant="ghost" onClick={runCheck} disabled={checking || saving || testMode}>
-          Check setup
-        </Button>
+      <h2 className="mb-3 text-h3 text-ink">Every email</h2>
+      <div className="mb-8 grid items-stretch gap-4 lg:grid-cols-12">
+        <div className="min-w-0 lg:col-span-8"><TemplateLibrary openNew={newTemplate} onOpenNew={setNewTemplate} /></div>
+        <div className="min-w-0 lg:col-span-4"><SharedAttachmentCard /></div>
       </div>
 
+      <h2 className="mb-3 text-h3 text-ink">You</h2>
+      <div className="mb-8"><ProfileCard testMode={testMode} /></div>
+
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-h3 text-ink">Set up later</h2>
+          <p className="mt-1 text-body-s text-muted">{testMode ? "Only your Gemini key does anything in the demo; sending is always simulated." : "Keys, Gmail and limits. Saved on this computer in data/settings.json."}</p>
+        </div>
+        {testMode ? null : (
+          <div className="flex flex-wrap items-center gap-3">
+            <Button variant="primary" onClick={() => save()} disabled={saving || !dirty}>
+              <Save size={20} strokeWidth={1.75} /> {dirty ? "Save settings" : "All saved"}
+            </Button>
+            <Button variant="ghost" onClick={runCheck} disabled={checking || saving}>Check setup</Button>
+          </div>
+        )}
+      </div>
       {checking ? (
         <div className="card mb-6 rounded-m px-5 py-4">
-          <Working>Calling Gemini, signing in to Gmail and reading your resume</Working>
+          <Working>Calling Gemini, signing in to Gmail and reading your attachment</Working>
         </div>
       ) : null}
       {checkError ? (
@@ -176,21 +197,9 @@ export function SettingsClient({ initial, testMode }: { initial: AppSettings; te
       ) : null}
       {check ? <CheckResult result={check} /> : null}
 
-      <Segmented
-        label="Settings section"
-        className="mb-4"
-        value={tab}
-        onChange={setTab}
-        options={[
-          { value: "gemini", label: "Gemini" },
-          { value: "gmail", label: "Gmail" },
-          { value: "resume", label: "Resume" },
-          { value: "template", label: "Template" },
-          { value: "sending", label: "Sending" },
-        ]}
-      />
 
-      {tab === "gemini" ? (
+      <div className="grid items-stretch gap-4 lg:grid-cols-3">
+        <div>{testMode ? <OwnKeyCard /> : (<>
         <Card>
           <CardHeader
             title="Gemini"
@@ -236,9 +245,40 @@ export function SettingsClient({ initial, testMode }: { initial: AppSettings; te
             </Field>
           </div>
         </Card>
-      ) : null}
+      </>)}</div>
+        <div><GmailConnect testMode={testMode} connectedAs={testMode ? undefined : saved.gmailEmail || undefined} /></div>
+        <div>
+        <Card>
+          <CardHeader title="Sending" sub="Slow and steady keeps you out of spam folders." />
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Field label="Seconds between emails" htmlFor="delay" help="8 or more is safe.">
+              <Input
+                id="delay"
+                type="number"
+                min={0}
+                className="tabular"
+                value={form.defaultDelaySeconds}
+                onChange={(e) => set("defaultDelaySeconds", Number(e.target.value))}
+              />
+            </Field>
+            <Field label="Most emails per send" htmlFor="maxPerRun" help="Gmail allows about 500 a day.">
+              <Input
+                id="maxPerRun"
+                type="number"
+                min={1}
+                className="tabular"
+                value={form.maxPerRun}
+                onChange={(e) => set("maxPerRun", Number(e.target.value))}
+              />
+            </Field>
+          </div>
+        </Card>
+      </div>
+      </div>
 
-      {tab === "gmail" ? (
+      {testMode ? null : (
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <div>
         <div className="flex flex-col gap-4">
           <Card>
             <CardHeader title="Gmail" sub="Emails go out from your own account, one at a time." />
@@ -292,7 +332,7 @@ export function SettingsClient({ initial, testMode }: { initial: AppSettings; te
                   type="email"
                   value={form.replyTo}
                   onChange={(e) => set("replyTo", e.target.value)}
-                  placeholder="you@university.edu"
+                  placeholder="you@company.com"
                 />
               </Field>
               <Field label="SMTP host" htmlFor="smtpHost">
@@ -310,7 +350,7 @@ export function SettingsClient({ initial, testMode }: { initial: AppSettings; te
             </div>
           </Card>
           <Card>
-            <CardHeader title="Send yourself a test" sub="Only to the address you type, with your resume attached." />
+            <CardHeader title="Send yourself a test" sub="Only to the address you type." />
             <div className="flex flex-col gap-3 sm:flex-row">
               <Input
                 type="email"
@@ -325,11 +365,10 @@ export function SettingsClient({ initial, testMode }: { initial: AppSettings; te
             </div>
           </Card>
         </div>
-      ) : null}
-
-      {tab === "resume" ? (
+      </div>
+          <div className="flex flex-col gap-4">
         <Card>
-          <CardHeader title="Resume" sub="Attached as a PDF to every email." />
+          <CardHeader title="Attachment (optional)" sub="A deck, one-pager or resume, attached as a PDF to every email." />
           {saved.resumePath ? (
             <div className="mb-5 flex items-center gap-3 rounded-m bg-surface px-5 py-4">
               <FileText size={20} strokeWidth={1.75} className="shrink-0 text-muted" />
@@ -357,12 +396,12 @@ export function SettingsClient({ initial, testMode }: { initial: AppSettings; te
             )}
           >
             {uploading ? (
-              <Working>Uploading your resume</Working>
+              <Working>Uploading your attachment</Working>
             ) : (
               <>
                 <Illustration object="paper plane" size={96} />
                 <span className="mt-5 text-h3 text-ink">
-                  {saved.resumePath ? "Drop a newer resume to replace it" : "Drop your resume here"}
+                  {saved.resumePath ? "Drop a newer PDF to replace it" : "Drop a PDF here"}
                 </span>
                 <span className="mt-1 text-body-s text-muted">PDF only, kept inside this project folder</span>
               </>
@@ -380,9 +419,7 @@ export function SettingsClient({ initial, testMode }: { initial: AppSettings; te
             }}
           />
         </Card>
-      ) : null}
-
-      {tab === "template" ? (
+      
         <Card>
           <CardHeader
             title="Your template"
@@ -434,35 +471,9 @@ export function SettingsClient({ initial, testMode }: { initial: AppSettings; te
             </p>
           </div>
         </Card>
-      ) : null}
-
-      {tab === "sending" ? (
-        <Card>
-          <CardHeader title="Sending" sub="Slow and steady keeps you out of spam folders." />
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Seconds between emails" htmlFor="delay" help="8 or more is safe.">
-              <Input
-                id="delay"
-                type="number"
-                min={0}
-                className="tabular"
-                value={form.defaultDelaySeconds}
-                onChange={(e) => set("defaultDelaySeconds", Number(e.target.value))}
-              />
-            </Field>
-            <Field label="Most emails per send" htmlFor="maxPerRun" help="Gmail allows about 500 a day.">
-              <Input
-                id="maxPerRun"
-                type="number"
-                min={1}
-                className="tabular"
-                value={form.maxPerRun}
-                onChange={(e) => set("maxPerRun", Number(e.target.value))}
-              />
-            </Field>
-          </div>
-        </Card>
-      ) : null}
+      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -471,7 +482,7 @@ function CheckResult({ result }: { result: TestConfigResult }) {
   const rows = [
     { label: "Gemini", r: result.gemini },
     { label: "Gmail", r: result.smtp },
-    { label: "Resume", r: result.resume },
+    { label: "Attachment", r: result.resume },
     { label: "Excel reader", r: result.excel },
   ];
   const bad = rows.filter((x) => !x.r.ok).length;

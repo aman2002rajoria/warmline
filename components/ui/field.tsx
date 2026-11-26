@@ -77,7 +77,7 @@ export function Checkbox({
           "flex h-[22px] w-[22px] items-center justify-center rounded-full transition-colors peer-focus-visible:shadow-[0_0_0_3px_var(--accent-200)]",
           checked || indeterminate
             ? "bg-accent-500 text-white"
-            : "bg-white shadow-[inset_0_0_0_1.5px_var(--faint)]",
+            : "bg-card shadow-[inset_0_0_0_1.5px_var(--faint)]",
         )}
       >
         {indeterminate ? (

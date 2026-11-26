@@ -21,6 +21,7 @@ export async function POST(_req: NextRequest, { params }: Ctx) {
     const { subject, body } = buildEmail({
       professorName: p.professorName,
       university: p.university,
+      subject: p.finalSubject || undefined, // keep the AI's (or your edited) subject
       personalizedLines: p.personalizedLines || "",
     });
 
