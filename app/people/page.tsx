@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 const FILTERS: Filter[] = ["all", "pending", "drafted", "approved", "sent", "failed"];
 
-export default function ProfessorsPage({
+export default function PeoplePage({
   searchParams,
 }: {
   searchParams: { filter?: string; import?: string };

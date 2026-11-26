@@ -38,11 +38,11 @@ export default function OverviewPage() {
     <>
       <PageHeader
         title="Your outreach so far"
-        sub="Personal emails to professors, written with you and sent from your own Gmail."
+        sub="Personal emails to the people you want to reach, written with you and sent from your own Gmail."
       />
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Kpi index={0} label="Professors" value={total} sub={total ? "in your list" : "import a sheet to start"} />
+        <Kpi index={0} label="People" value={total} sub={total ? "in your list" : "import a sheet to start"} />
         <Kpi
           index={1}
           label="To review"
@@ -60,13 +60,15 @@ export default function OverviewPage() {
           index={3}
           label="Failed"
           value={failed}
-          sub={failed ? "retry from Professors" : "every send went through"}
+          sub={failed ? "retry from People" : "every send went through"}
         />
       </div>
 
       <div className="mt-4 grid gap-4 md:grid-cols-12">
-        <Card index={4} tint className="flex flex-col justify-between md:col-span-8">
-          <div>
+        <Card index={4} tint className="relative flex flex-col justify-between overflow-hidden md:col-span-8">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/art/W3-approve.webp" alt="" width={190} height={190} className="pointer-events-none absolute bottom-4 right-6 hidden h-[190px] w-auto drop-shadow-[0_18px_24px_rgba(47,107,255,.25)] md:block" />
+          <div className="md:pr-[210px]">
             <Eyebrow className="text-accent-700">Next step</Eyebrow>
             <h2 className="mt-3 max-w-[30ch] text-h2 text-accent-900">{next.title}</h2>
             <p className="mt-3 max-w-[60ch] text-body text-ink-2">{next.text}</p>
@@ -178,17 +180,17 @@ function nextStep(s: {
   if (!s.setupReady) {
     return {
       title: "Finish setup before your first send",
-      text: "Warmline needs a Gemini key to write the personal lines, a Gmail app password to send, your resume, and a template with no placeholders left.",
+      text: "Warmline needs a Gemini key to write the personal lines, a Gmail app password to send, and a template with no placeholders left. An attachment is optional.",
       cta: "Open settings",
       href: "/settings",
     };
   }
   if (s.total === 0) {
     return {
-      title: "Add the professors you want to write to",
-      text: "Import an Excel sheet with name, university and email. A research area or a note for each one gives Gemini something real to mention.",
+      title: "Add the people you want to write to",
+      text: "Import a sheet with name, company and email. What they work on, or a note about each one, gives Gemini something real to mention.",
       cta: "Import a sheet",
-      href: "/professors?import=1",
+      href: "/people?import=1",
     };
   }
   if (s.drafted > 0) {
@@ -196,23 +198,23 @@ function nextStep(s: {
       title: `${plural(s.drafted, "draft")} ${s.drafted === 1 ? "is" : "are"} ready for your review`,
       text: "Read each one, fix anything that sounds off, then approve it or send it straight away.",
       cta: "Review drafts",
-      href: "/professors?filter=drafted",
+      href: "/people?filter=drafted",
     };
   }
   if (s.approved > 0) {
     return {
       title: `${plural(s.approved, "approved email")} ${s.approved === 1 ? "is" : "are"} ready to send`,
-      text: "They go out one at a time from your Gmail, a few seconds apart, with your resume attached.",
+      text: "They go out one at a time from your Gmail, a few seconds apart.",
       cta: "Send approved",
-      href: "/professors?filter=approved",
+      href: "/people?filter=approved",
     };
   }
   if (s.pending > 0) {
     return {
-      title: `${plural(s.pending, "professor")} ${s.pending === 1 ? "doesn't" : "don't"} have a draft yet`,
-      text: "Gemini writes two or three lines about each professor's research. The rest is your own template.",
+      title: `${plural(s.pending, "person", "people")} ${s.pending === 1 ? "doesn't" : "don't"} have a draft yet`,
+      text: "Gemini writes two or three lines about what each person works on. The rest is your own template.",
       cta: "Write drafts",
-      href: "/professors?filter=pending",
+      href: "/people?filter=pending",
     };
   }
   if (s.failed > 0) {
@@ -220,13 +222,13 @@ function nextStep(s: {
       title: `${plural(s.failed, "email")} didn't go through`,
       text: "Check the reason on each one, fix it, and send again.",
       cta: "See failed",
-      href: "/professors?filter=failed",
+      href: "/people?filter=failed",
     };
   }
   return {
     title: "Everything in your list has been sent",
     text: "Import another sheet when you're ready for the next batch.",
     cta: "Import a sheet",
-    href: "/professors?import=1",
+    href: "/people?import=1",
   };
 }

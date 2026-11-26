@@ -14,10 +14,11 @@ import { Chip } from "@/components/ui/chip";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { Segmented } from "@/components/ui/segmented";
 import { Illustration, Working } from "@/components/ui/feedback";
+import { OwnKeyCard } from "@/components/own-key-card";
 
 type Tab = "gemini" | "gmail" | "resume" | "template" | "sending";
 
-const TOKENS = ["{{professor_name}}", "{{university}}", "{{personalized_lines}}"];
+const TOKENS = ["{{first_name}}", "{{name}}", "{{company}}", "{{personalized_lines}}"];
 
 export function SettingsClient({ initial, testMode }: { initial: AppSettings; testMode: boolean }) {
   const router = useRouter();
@@ -104,7 +105,7 @@ export function SettingsClient({ initial, testMode }: { initial: AppSettings; te
 
   async function uploadResume(file: File) {
     if (!/\.pdf$/i.test(file.name)) {
-      toast.error("Your resume needs to be a PDF.");
+      toast.error("The attachment needs to be a PDF.");
       return;
     }
     setUploading(true);
@@ -117,7 +118,7 @@ export function SettingsClient({ initial, testMode }: { initial: AppSettings; te
       set("resumePath", data.resumePath);
       setSaved((s) => ({ ...s, resumePath: data.resumePath }));
       router.refresh();
-      toast.success("Resume uploaded. It's attached to every email from now on.");
+      toast.success("Attachment uploaded. It goes with every email from now on.");
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
@@ -142,13 +143,13 @@ export function SettingsClient({ initial, testMode }: { initial: AppSettings; te
     <div className="max-w-read">
       <PageHeader
         title="Settings"
-        sub="Saved on this computer in data/settings.json. Your keys never leave it."
+        sub={testMode ? "Add your own Gemini key to try real AI lines on the test people." : "Saved on this computer in data/settings.json. Your keys never leave it."}
       />
 
+      {testMode ? <OwnKeyCard /> : null}
       {testMode ? (
         <div className="mb-6 rounded-m bg-warning-tint px-5 py-4 text-body-s text-warning-text">
-          You&rsquo;re in test mode, so these are your real settings, shown read-only. Switch to your
-          own data from the TEST DATA badge at the top to change them.
+          Everything below is the app&rsquo;s own setup for real sending, shown read-only in this test-data demo.
         </div>
       ) : null}
 
@@ -163,7 +164,7 @@ export function SettingsClient({ initial, testMode }: { initial: AppSettings; te
 
       {checking ? (
         <div className="card mb-6 rounded-m px-5 py-4">
-          <Working>Calling Gemini, signing in to Gmail and reading your resume</Working>
+          <Working>Calling Gemini, signing in to Gmail and reading your attachment</Working>
         </div>
       ) : null}
       {checkError ? (
@@ -184,7 +185,7 @@ export function SettingsClient({ initial, testMode }: { initial: AppSettings; te
         options={[
           { value: "gemini", label: "Gemini" },
           { value: "gmail", label: "Gmail" },
-          { value: "resume", label: "Resume" },
+          { value: "resume", label: "Attachment" },
           { value: "template", label: "Template" },
           { value: "sending", label: "Sending" },
         ]}
@@ -292,7 +293,7 @@ export function SettingsClient({ initial, testMode }: { initial: AppSettings; te
                   type="email"
                   value={form.replyTo}
                   onChange={(e) => set("replyTo", e.target.value)}
-                  placeholder="you@university.edu"
+                  placeholder="you@company.com"
                 />
               </Field>
               <Field label="SMTP host" htmlFor="smtpHost">
@@ -310,7 +311,7 @@ export function SettingsClient({ initial, testMode }: { initial: AppSettings; te
             </div>
           </Card>
           <Card>
-            <CardHeader title="Send yourself a test" sub="Only to the address you type, with your resume attached." />
+            <CardHeader title="Send yourself a test" sub="Only to the address you type." />
             <div className="flex flex-col gap-3 sm:flex-row">
               <Input
                 type="email"
@@ -329,7 +330,7 @@ export function SettingsClient({ initial, testMode }: { initial: AppSettings; te
 
       {tab === "resume" ? (
         <Card>
-          <CardHeader title="Resume" sub="Attached as a PDF to every email." />
+          <CardHeader title="Attachment (optional)" sub="A deck, one-pager or resume, attached as a PDF to every email." />
           {saved.resumePath ? (
             <div className="mb-5 flex items-center gap-3 rounded-m bg-surface px-5 py-4">
               <FileText size={20} strokeWidth={1.75} className="shrink-0 text-muted" />
@@ -357,12 +358,12 @@ export function SettingsClient({ initial, testMode }: { initial: AppSettings; te
             )}
           >
             {uploading ? (
-              <Working>Uploading your resume</Working>
+              <Working>Uploading your attachment</Working>
             ) : (
               <>
                 <Illustration object="paper plane" size={96} />
                 <span className="mt-5 text-h3 text-ink">
-                  {saved.resumePath ? "Drop a newer resume to replace it" : "Drop your resume here"}
+                  {saved.resumePath ? "Drop a newer PDF to replace it" : "Drop a PDF here"}
                 </span>
                 <span className="mt-1 text-body-s text-muted">PDF only, kept inside this project folder</span>
               </>
@@ -471,7 +472,7 @@ function CheckResult({ result }: { result: TestConfigResult }) {
   const rows = [
     { label: "Gemini", r: result.gemini },
     { label: "Gmail", r: result.smtp },
-    { label: "Resume", r: result.resume },
+    { label: "Attachment", r: result.resume },
     { label: "Excel reader", r: result.excel },
   ];
   const bad = rows.filter((x) => !x.r.ok).length;

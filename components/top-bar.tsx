@@ -12,12 +12,11 @@ export function TopBar() {
     <header className="sticky top-0 z-30 border-b border-line bg-white/[.86] backdrop-blur-[16px]">
       <div className="mx-auto flex h-16 max-w-app items-center justify-between gap-4 px-[clamp(20px,4vw,48px)]">
         <Link href="/" className="flex min-w-0 items-center gap-3" aria-label="Warmline home">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-accent-500 text-[17px] font-black text-white shadow-[0_3px_0_var(--accent-700)]">
-            W
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/art/logo-tile.webp" alt="" width={34} height={36} className="h-9 w-[34px] shrink-0 drop-shadow-[0_4px_8px_rgba(47,107,255,.35)]" />
           <span className="text-[20px] font-black tracking-[-0.01em] text-ink">Warmline</span>
           <span className="hidden truncate text-body-s text-muted sm:inline">
-            research outreach that reads warm
+            cold outreach that reads warm
           </span>
         </Link>
         <div className="flex items-center gap-3">

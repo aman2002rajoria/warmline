@@ -6,7 +6,6 @@ import { Search, Upload } from "lucide-react";
 import { toast } from "sonner";
 import type { ProfessorRecord, ProfessorStatus } from "@/types";
 import { plural } from "@/lib/format";
-import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Segmented } from "@/components/ui/segmented";
@@ -87,7 +86,7 @@ export function ProfessorsClient({
 
   // Drop the ?filter= / ?import= from the URL once read, so refreshes start clean.
   useEffect(() => {
-    if (window.location.search) router.replace("/professors", { scroll: false });
+    if (window.location.search) router.replace("/people", { scroll: false });
   }, [router]);
 
   async function refresh() {
@@ -156,7 +155,7 @@ export function ProfessorsClient({
     setConfirm(null);
     try {
       const { deleted } = await api.remove([...checked]);
-      toast.success(`${plural(deleted, "professor")} removed.`);
+      toast.success(`${plural(deleted, "person", "people")} removed.`);
       setChecked(new Set());
       await refresh();
     } catch (err) {
@@ -166,37 +165,38 @@ export function ProfessorsClient({
 
   const summary = rows.length
     ? [
-        plural(rows.length, "professor"),
+        plural(rows.length, "person", "people"),
         counts.drafted ? `${counts.drafted} to review` : null,
         counts.sent ? `${counts.sent} sent` : null,
       ]
         .filter(Boolean)
         .join(" · ")
-    : "Import a sheet of professors to get started.";
+    : "Import a sheet of people to get started.";
 
   const skipped = checkedRows.length - toSend.length;
   const overLimit = limits.maxPerRun > 0 && toSend.length > limits.maxPerRun;
 
   return (
     <>
-      <PageHeader
-        title="Professors"
-        sub={summary}
-        actions={
-          rows.length && !testMode ? (
-            <Button variant="ghost" onClick={() => setImportOpen(true)}>
-              <Upload size={20} strokeWidth={1.75} /> Import sheet
-            </Button>
-          ) : null
-        }
-      />
+      {/* A compact header, so the list and the draft fill the rest of the screen */}
+      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+        <div className="flex flex-wrap items-baseline gap-x-3">
+          <h1 className="text-h2 text-ink">People</h1>
+          <span className="text-body-s text-muted">{summary}</span>
+        </div>
+        {rows.length && !testMode ? (
+          <Button size="sm" variant="ghost" onClick={() => setImportOpen(true)}>
+            <Upload size={16} strokeWidth={1.75} /> Import sheet
+          </Button>
+        ) : null}
+      </div>
 
       {rows.length === 0 ? (
         <Card index={0}>
           <EmptyState
             object="mailbox"
-            title="Add the professors you want to write to"
-            text="Import an Excel sheet with name, university and email. A research area or a note for each one gives Gemini something real to mention."
+            title="Add the people you want to write to"
+            text="Import a sheet with name, company and email. What they work on, or a note about each one, gives Gemini something real to mention."
           >
             <Button variant="primary" onClick={() => setImportOpen(true)}>
               <Upload size={20} strokeWidth={1.75} /> Import a sheet
@@ -237,8 +237,8 @@ export function ProfessorsClient({
               />
               <input
                 className="input pl-10"
-                placeholder="Search name, university, area"
-                aria-label="Search professors"
+                placeholder="Search name, company, role"
+                aria-label="Search people"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
@@ -249,8 +249,7 @@ export function ProfessorsClient({
             <div className="card mb-4 rounded-m px-5 py-4">
               {job.kind === "drafting" ? (
                 <Working>
-                  Writing draft {job.done + 1} of {job.total}: reading {job.name}&rsquo;s research
-                  area and notes
+                  Writing draft {job.done + 1} of {job.total}: reading what {job.name} works on
                 </Working>
               ) : (
                 <Working>
@@ -261,8 +260,8 @@ export function ProfessorsClient({
             </div>
           ) : null}
 
-          <div className="grid items-start gap-4 md:grid-cols-12">
-            <div className="min-w-0 md:col-span-5 lg:col-span-4">
+          <div className="grid items-stretch gap-4 md:h-[calc(100vh-304px)] md:min-h-[520px] md:grid-cols-12">
+            <div className="min-w-0 md:col-span-5 md:h-full md:min-h-0 lg:col-span-4">
               <ProfessorList
                 rows={shown}
                 activeId={active?.id ?? null}
@@ -279,7 +278,7 @@ export function ProfessorsClient({
                 filter={filter}
               />
             </div>
-            <div ref={detailRef} className="min-w-0 scroll-mt-24 md:col-span-7 lg:col-span-8">
+            <div ref={detailRef} className="min-w-0 scroll-mt-24 md:col-span-7 md:h-full md:min-h-0 lg:col-span-8">
               {active ? (
                 <DraftPanel
                   key={`${active.id}-${active.updatedAt}`}
@@ -327,7 +326,7 @@ export function ProfessorsClient({
         description={
           <>
             They go out one at a time from {sender || "your Gmail"}, {limits.delaySeconds} seconds
-            apart, with your resume attached.
+            apart.
           </>
         }
         footer={
@@ -345,7 +344,7 @@ export function ProfessorsClient({
         <ul className="flex flex-col gap-2 text-body-s text-ink-2">
           {skipped > 0 ? (
             <li className="rounded-s bg-warning-tint px-4 py-3 text-warning-text">
-              {plural(skipped, "selected professor")} {skipped === 1 ? "isn't" : "aren't"} approved
+              {plural(skipped, "selected person", "selected people")} {skipped === 1 ? "isn't" : "aren't"} approved
               yet and will be skipped.
             </li>
           ) : null}
@@ -361,7 +360,7 @@ export function ProfessorsClient({
       <Modal
         open={confirm === "delete"}
         onOpenChange={(o) => !o && setConfirm(null)}
-        title={`Remove ${plural(checked.size, "professor")}?`}
+        title={`Remove ${plural(checked.size, "person", "people")}?`}
         description="Their drafts are deleted too. Emails already sent stay in History."
         footer={
           <>
@@ -369,7 +368,7 @@ export function ProfessorsClient({
               Cancel
             </Button>
             <Button variant="danger" onClick={deleteChecked}>
-              Remove {plural(checked.size, "professor")}
+              Remove {plural(checked.size, "person", "people")}
             </Button>
           </>
         }

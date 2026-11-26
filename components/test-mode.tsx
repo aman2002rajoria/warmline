@@ -15,7 +15,7 @@ async function setMode(mode: "on" | "reset" | "off") {
   if (!res.ok) throw new Error("Couldn't switch modes. Try again.");
 }
 
-/** "Try with test data": loads fixtures and opens Professors. */
+/** "Try with test data": loads fixtures and opens People. */
 export function TryTestData({ variant = "ghost" }: { variant?: ButtonVariant }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -27,7 +27,7 @@ export function TryTestData({ variant = "ghost" }: { variant?: ButtonVariant }) 
         setBusy(true);
         try {
           await setMode("on");
-          router.push("/professors");
+          router.push("/people");
           router.refresh();
         } catch (err) {
           toast.error((err as Error).message);
@@ -64,7 +64,7 @@ export function TestModeMenu({ publicDemo = false }: { publicDemo?: boolean }) {
     try {
       await setMode(mode);
       toast.success(mode === "off" ? "Back to your own data." : "Test data reset.");
-      router.push(mode === "off" ? "/" : "/professors");
+      router.push(mode === "off" ? "/" : "/people");
       router.refresh();
     } catch (err) {
       toast.error((err as Error).message);
@@ -90,8 +90,8 @@ export function TestModeMenu({ publicDemo = false }: { publicDemo?: boolean }) {
         >
           <p className="px-3 pb-2 pt-1 text-body-s text-muted">
             {publicDemo
-              ? "A public demo with sample professors. Sends are simulated and nothing is emailed."
-              : "Sample professors. Sends are simulated and nothing is emailed."}
+              ? "A public demo with sample people. Sends are simulated and nothing is emailed. Add your own Gemini key in Settings for real AI lines."
+              : "Sample people. Sends are simulated and nothing is emailed."}
           </p>
           {publicDemo ? null : (
             <button role="menuitem" type="button" className={item} onClick={() => run("off")}>

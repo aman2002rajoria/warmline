@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowUpRight, Check, PenLine, RefreshCw, Send } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowUpRight, Briefcase, Building2, Check, KeyRound, Link2, PenLine, RefreshCw, Send, Sparkles, StickyNote, Target } from "lucide-react";
+import Link from "next/link";
+import { getOwnKey } from "@/lib/own-key";
 import { toast } from "sonner";
 import type { ProfessorRecord } from "@/types";
 import { fmtDateTime } from "@/lib/format";
@@ -16,14 +18,30 @@ import { api } from "./api";
 
 type Busy = null | "writing" | "rewriting" | "applying" | "approving" | "sending";
 
-/** What Gemini is given about a professor, in the order the prompt lists it. */
+const di = { size: 16, strokeWidth: 1.9 } as const;
+/** What Gemini is given about a person, in the order the prompt lists it. */
 function detailsOf(p: ProfessorRecord) {
   return [
-    { label: "Research area", value: p.researchArea },
-    { label: "Department", value: p.department },
-    { label: "Lab website", value: p.labWebsite },
-    { label: "Your notes", value: p.notes },
-  ].filter((d): d is { label: string; value: string } => Boolean(d.value));
+    { label: "Works on", value: p.researchArea, icon: <Target {...di} /> },
+    { label: "Role", value: p.department, icon: <Briefcase {...di} /> },
+    { label: "Company", value: p.university, icon: <Building2 {...di} /> },
+    { label: "Link", value: p.labWebsite, icon: <Link2 {...di} /> },
+    { label: "Your notes", value: p.notes, icon: <StickyNote {...di} /> },
+  ].filter((d): d is { label: string; value: string; icon: JSX.Element } => Boolean(d.value));
+}
+
+/** Faces for the test people (from the Warmline illustrations); everyone else gets an initial. */
+const FACES: Record<string, string> = { "Priya Menon": "/art/P-priya.webp", "Kabir Shah": "/art/P-kabir.webp", "Meera Iyer": "/art/P-meera.webp", "Rohan Das": "/art/P-rohan.webp" };
+export function Avatar({ name, size = 44 }: { name: string; size?: number }) {
+  const src = FACES[name];
+  return src ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt="" width={size} height={size} style={{ width: size, height: size }} className="shrink-0 rounded-full" />
+  ) : (
+    <span style={{ width: size, height: size }} className="flex shrink-0 items-center justify-center rounded-full bg-accent-100 text-[15px] font-black text-accent-700">
+      {name.split(" ").map((w) => w[0]).slice(0, 2).join("")}
+    </span>
+  );
 }
 
 export function DraftPanel({
@@ -114,7 +132,7 @@ export function DraftPanel({
       if (res.sent > 0)
         toast.success(
           testMode
-            ? `Sent to ${p.professorName} in test mode. Nothing left your computer.`
+            ? `Test mode: marked as sent to ${p.professorName}. Nothing was emailed.`
             : `Sent to ${p.professorName}.`,
         );
       else toast.error(res.details[0]?.error || "That email didn't go out.");
@@ -125,250 +143,219 @@ export function DraftPanel({
     setBusy(null);
   }
 
+  const [hasKey, setHasKey] = useState(false);
+  useEffect(() => {
+    const read = () => setHasKey(Boolean(getOwnKey()));
+    read();
+    window.addEventListener("warmline-key", read);
+    return () => window.removeEventListener("warmline-key", read);
+  }, []);
+
+  const first = p.professorName.split(" ")[0];
+  const canSend = !locked && Boolean(subject.trim()) && Boolean(body.trim());
+
   return (
-    <section className="card rise rounded-l p-6 md:p-7" aria-label={`Draft for ${p.professorName}`}>
-      {/* Who */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="text-h2 text-ink">{p.professorName}</h2>
-          <p className="mt-2 text-body-s text-muted">
-            {[p.department, p.university].filter(Boolean).join(" · ")}
-          </p>
-          <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-body-s text-muted">
-            <span>{p.email}</span>
-            {p.labWebsite ? (
-              <a
-                href={p.labWebsite.startsWith("http") ? p.labWebsite : `https://${p.labWebsite}`}
-                target="_blank"
-                rel="noreferrer"
-                className="link inline-flex items-center gap-0.5"
-              >
-                Lab website <ArrowUpRight size={16} strokeWidth={1.75} />
-              </a>
-            ) : null}
+    <section
+      className="card rise flex flex-col overflow-hidden rounded-l md:h-full"
+      aria-label={`Draft for ${p.professorName}`}
+    >
+      {/* Who, and what to do: always in view */}
+      <header className="flex flex-wrap items-center gap-x-4 gap-y-3 border-b border-line px-5 py-4 md:px-6">
+        <Avatar name={p.professorName} />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="truncate text-h3 text-ink">{p.professorName}</h2>
+            <StatusChip status={p.status} />
+          </div>
+          <p className="mt-0.5 truncate text-body-s text-muted">
+            {[p.department, p.university].filter(Boolean).join(" · ")} · {p.email}
           </p>
         </div>
-        <StatusChip status={p.status} />
-      </div>
-
-      {/* What Gemini reads */}
-      <div className="mt-6 rounded-m bg-surface p-5">
-        <Eyebrow className="text-muted">What Gemini reads</Eyebrow>
-        {details.length ? (
-          <dl className="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-[140px_1fr]">
-            {details.map((d) => (
-              <div key={d.label} className="contents">
-                <dt className="text-label text-muted sm:pt-0.5">{d.label}</dt>
-                <dd className="break-words text-body text-ink-2">{d.value}</dd>
-              </div>
-            ))}
-          </dl>
-        ) : (
-          <p className="mt-3 text-body text-ink-2">
-            Only a name and university. Add a research area or a note in your sheet so the lines
-            can say something specific.
-          </p>
-        )}
-      </div>
-
-      {p.status === "failed" && p.errorMessage ? (
-        <div className="mt-4 rounded-m bg-danger-tint p-5">
-          <div className="font-extrabold text-danger-text">This email didn&rsquo;t go out</div>
-          <p className="mt-1 break-words text-body-s text-danger-text">{p.errorMessage}</p>
-          <p className="mt-2 text-body-s text-ink-2">
-            Fix the cause (often the Gmail app password in Settings), then send again below.
-          </p>
-        </div>
-      ) : null}
-
-      {!hasDraft ? (
-        /* No draft yet */
-        <div className="mt-6 flex flex-col items-start gap-4">
-          {busy === "writing" ? (
-            <Working>Reading {p.professorName}&rsquo;s research area and notes</Working>
+        {hasDraft && !isSent ? (
+          busy === "sending" ? (
+            <Working>Sending from your Gmail</Working>
           ) : (
-            <>
-              <div>
-                <h3 className="text-h3 text-ink">No draft yet</h3>
-                <p className="mt-1 max-w-[60ch] text-body text-muted">
-                  Gemini writes two or three lines from the details above. Everything else comes
-                  from your template.
-                </p>
-              </div>
-              <Button variant="primary" onClick={() => writeDraft(false)} disabled={locked}>
-                <PenLine size={20} strokeWidth={1.75} /> Write draft
+            <div className="flex flex-wrap items-center gap-2">
+              {p.status !== "approved" || dirty ? (
+                <Button size="sm" variant="ghost" onClick={approve} disabled={locked}>
+                  <Check size={16} strokeWidth={1.9} />
+                  {p.status === "approved" ? "Save changes" : "Approve for later"}
+                </Button>
+              ) : null}
+              <Button size="sm" variant="primary" onClick={() => setConfirmSend(true)} disabled={!canSend}>
+                <Send size={16} strokeWidth={1.9} />
+                {p.status === "failed" ? "Send again" : "Approve & send"}
               </Button>
-            </>
-          )}
-        </div>
-      ) : (
-        <>
-          {/* The AI-written part */}
-          <div className="mt-6 rounded-m bg-accent-50 p-5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
+            </div>
+          )
+        ) : null}
+      </header>
+
+      <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto p-5 md:p-6 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)]">
+        {/* Left: what it read, and the AI's lines */}
+        <div className="flex min-w-0 flex-col gap-4">
+          <div className="rounded-m bg-surface p-4">
+            <div className="flex items-center justify-between gap-2">
+              <Eyebrow className="text-muted">What it read</Eyebrow>
+              {thin ? <Chip tone="warning">Little to go on</Chip> : null}
+            </div>
+            {details.length ? (
+              <ul className="mt-3 flex flex-col gap-2.5">
+                {details.map((d) => (
+                  <li key={d.label} className="flex gap-2.5">
+                    <span className="mt-0.5 text-accent-600">{d.icon}</span>
+                    <div className="min-w-0">
+                      <div className="text-label text-muted">{d.label}</div>
+                      {d.label === "Link" ? (
+                        <a href={d.value.startsWith("http") ? d.value : `https://${d.value}`} target="_blank" rel="noreferrer" className="link inline-flex items-center gap-0.5 break-all text-body-s">
+                          {d.value} <ArrowUpRight size={14} strokeWidth={1.75} />
+                        </a>
+                      ) : (
+                        <div className="break-words text-body-s text-ink-2">{d.value}</div>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-3 text-body-s text-ink-2">Only a name and company. Add what they work on, or a note, so the lines can say something specific.</p>
+            )}
+          </div>
+
+          {p.status === "failed" && p.errorMessage ? (
+            <div className="rounded-m bg-danger-tint p-4">
+              <div className="font-extrabold text-danger-text">This email didn&rsquo;t go out</div>
+              <p className="mt-1 break-words text-body-s text-danger-text">{p.errorMessage}</p>
+            </div>
+          ) : null}
+
+          {hasDraft ? (
+            <div className="rounded-m bg-accent-50 p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <Sparkles size={15} strokeWidth={2} className="text-accent-700" />
                 <Eyebrow className="text-accent-700">Personal lines</Eyebrow>
                 <Badge>AI</Badge>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {thin ? <Chip tone="warning">Little to go on, check this</Chip> : null}
-                <Chip tone="accent" className="bg-white">
-                  Based on {details.length + 2} details
-                </Chip>
-              </div>
+              {busy === "rewriting" ? (
+                <Working className="mt-3">Rewriting from {first}&rsquo;s details</Working>
+              ) : editingLines ? (
+                <Textarea className="mt-3 bg-white" rows={5} value={lines} onChange={(e) => setLines(e.target.value)} aria-label="Personal lines" autoFocus />
+              ) : (
+                <p className="mt-2 text-body-s leading-relaxed text-ink">{lines || <span className="text-muted">Empty. Rewrite or type your own.</span>}</p>
+              )}
+              {why ? (
+                <p className="mt-3 text-label leading-relaxed text-accent-900">
+                  Gemini read the name and {details.map((d) => d.label.toLowerCase()).join(", ") || "company"}, and wrote these lines to sit right after your greeting. It can&rsquo;t open links, so check every claim is true before you send.
+                </p>
+              ) : null}
+              {!isSent ? (
+                <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                  {editingLines ? (
+                    <>
+                      <Button size="sm" onClick={applyLines} disabled={locked || !lines.trim()}>
+                        <Check size={15} strokeWidth={1.9} /> Use in email
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => { setLines(p.personalizedLines || ""); setEditingLines(false); }}>
+                        Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button size="sm" variant="ghost" onClick={() => writeDraft(true)} disabled={locked}>
+                        <RefreshCw size={15} strokeWidth={1.9} /> Rewrite
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingLines(true)} disabled={locked}>
+                        <PenLine size={15} strokeWidth={1.9} /> Edit
+                      </Button>
+                    </>
+                  )}
+                  <button type="button" className="link ml-1 text-label" onClick={() => setWhy((w) => !w)}>
+                    {why ? "Hide" : "Why this?"}
+                  </button>
+                </div>
+              ) : null}
             </div>
+          ) : null}
+        </div>
 
-            {busy === "rewriting" ? (
-              <Working className="mt-4">Rewriting from {p.professorName}&rsquo;s details</Working>
-            ) : editingLines ? (
-              <Textarea
-                className="mt-4 bg-white"
-                rows={4}
-                value={lines}
-                onChange={(e) => setLines(e.target.value)}
-                aria-label="Personal lines"
-                autoFocus
-              />
-            ) : (
-              <p className="mt-3 text-[17px] leading-relaxed text-ink">
-                {lines || <span className="text-muted">Empty. Rewrite or type your own.</span>}
-              </p>
-            )}
-
-            {why ? (
-              <p className="mt-4 max-w-[64ch] text-body-s text-accent-900">
-                Gemini read the name, university
-                {details.length ? `, ${details.map((d) => d.label.toLowerCase()).join(", ")}` : ""} and
-                wrote these lines to sit between your greeting and the rest of your template. It
-                can&rsquo;t open websites or look up papers, so it stays general. Check every claim
-                is true before you send.
-              </p>
-            ) : null}
-
-            {!isSent ? (
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                {editingLines ? (
-                  <>
-                    <Button size="sm" onClick={applyLines} disabled={locked || !lines.trim()}>
-                      <Check size={16} strokeWidth={1.75} /> Use in email
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setLines(p.personalizedLines || "");
-                        setEditingLines(false);
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button size="sm" variant="ghost" onClick={() => writeDraft(true)} disabled={locked}>
-                      <RefreshCw size={16} strokeWidth={1.75} /> Rewrite
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setEditingLines(true)} disabled={locked}>
-                      <PenLine size={16} strokeWidth={1.75} /> Edit
-                    </Button>
-                  </>
-                )}
-                <button type="button" className="link text-body-s" onClick={() => setWhy((w) => !w)}>
-                  {why ? "Hide" : "Why this?"}
-                </button>
-              </div>
-            ) : null}
-          </div>
-
-          {/* The full email */}
-          <div className="mt-6 flex items-center justify-between gap-3">
-            <Eyebrow className="text-muted">The email</Eyebrow>
-            {!isSent ? (
-              <Segmented
-                label="Email view"
-                value={mode}
-                onChange={setMode}
-                options={[
-                  { value: "preview", label: "Preview" },
-                  { value: "edit", label: "Edit" },
-                ]}
-              />
-            ) : null}
-          </div>
-
-          {mode === "edit" && !isSent ? (
-            <div className="mt-4 flex flex-col gap-3">
-              <Input
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                aria-label="Subject"
-                placeholder="Subject"
-              />
-              <Textarea
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                rows={18}
-                aria-label="Email body"
-                className="text-[16px] leading-relaxed"
-              />
-            </div>
-          ) : (
-            <div className="mt-4 rounded-m bg-surface p-5 md:p-6">
-              <div className="border-b border-line pb-4">
-                <div className="text-label text-muted">Subject</div>
-                <div className="mt-1 font-semibold text-ink">{subject}</div>
-              </div>
-              <div className="whitespace-pre-wrap pt-4 text-[16px] leading-relaxed text-ink-2">
-                <Highlighted body={body} lines={lines} />
-              </div>
-              <div className="mt-4 border-t border-line pt-4 text-body-s text-muted">
-                Your resume is attached as a PDF.
-              </div>
-            </div>
-          )}
-
-          {/* Actions */}
-          {isSent ? (
-            <p className="mt-6 text-body-s text-success-text">
-              Sent {fmtDateTime(p.sentAt)} from {sender || "your Gmail"}.
-            </p>
-          ) : busy === "sending" ? (
-            <Working className="mt-6">Sending from your Gmail</Working>
-          ) : (
-            <div className="mt-6">
-              <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  variant="primary"
-                  onClick={() => setConfirmSend(true)}
-                  disabled={locked || !subject.trim() || !body.trim()}
-                >
-                  <Send size={20} strokeWidth={1.75} />
-                  {p.status === "failed" ? "Send again" : "Approve & send"}
-                </Button>
-                {p.status !== "approved" || dirty ? (
-                  <Button variant="ghost" onClick={approve} disabled={locked}>
-                    {p.status === "approved" ? "Save changes" : "Approve for later"}
+        {/* Right: the email itself, or the empty state */}
+        <div className="flex min-w-0 flex-col">
+          {!hasDraft ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-4 rounded-m bg-surface px-6 py-10 text-center">
+              {busy === "writing" ? (
+                <Working>Reading what {first} works on</Working>
+              ) : (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/art/F2-draft.webp" alt="" width={120} height={120} className="h-[120px] w-auto drop-shadow-[0_14px_18px_rgba(47,107,255,.22)]" />
+                  <div>
+                    <h3 className="text-h3 text-ink">No draft yet</h3>
+                    <p className="mx-auto mt-1 max-w-[46ch] text-body-s text-muted">
+                      Gemini writes two or three lines from what it read. The rest is your own template, so it still sounds like you.
+                    </p>
+                  </div>
+                  <Button variant="primary" onClick={() => writeDraft(false)} disabled={locked}>
+                    <PenLine size={18} strokeWidth={1.9} /> Write draft
                   </Button>
+                  <p className="inline-flex items-center gap-1.5 text-label text-muted">
+                    <KeyRound size={14} strokeWidth={1.9} />
+                    {hasKey ? "Using your own Gemini key." : <>Test lines for now. <Link href="/settings" className="link">Add your Gemini key</Link> for real ones.</>}
+                  </p>
+                </>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <Eyebrow className="text-muted">The email</Eyebrow>
+                {!isSent ? (
+                  <Segmented
+                    label="Email view"
+                    value={mode}
+                    onChange={setMode}
+                    options={[
+                      { value: "preview", label: "Preview" },
+                      { value: "edit", label: "Edit" },
+                    ]}
+                  />
                 ) : null}
               </div>
-              <p className="mt-3 text-body-s text-muted">Nothing goes out without your click.</p>
-            </div>
+              {mode === "edit" && !isSent ? (
+                <div className="flex flex-col gap-3">
+                  <Input value={subject} onChange={(e) => setSubject(e.target.value)} aria-label="Subject" placeholder="Subject" />
+                  <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={14} aria-label="Email body" className="text-[15px] leading-relaxed" />
+                </div>
+              ) : (
+                <div className="rounded-m bg-surface p-5">
+                  <div className="border-b border-line pb-3">
+                    <div className="text-label text-muted">To {p.email}</div>
+                    <div className="mt-1 font-semibold text-ink">{subject}</div>
+                  </div>
+                  <div className="whitespace-pre-wrap pt-3 text-[15px] leading-relaxed text-ink-2">
+                    <Highlighted body={body} lines={lines} />
+                  </div>
+                </div>
+              )}
+              <p className="mt-3 text-label text-muted">
+                {isSent ? `Sent ${fmtDateTime(p.sentAt)} from ${sender || "your Gmail"}.` : "Nothing goes out without your click."}
+              </p>
+            </>
           )}
-        </>
-      )}
+        </div>
+      </div>
 
       <Modal
         open={confirmSend}
         onOpenChange={setConfirmSend}
-        title={`Send to ${p.professorName}?`}
-        description={`It goes out now from ${sender || "your Gmail"}, with your resume attached.`}
+        title={`Send to ${first}?`}
+        description={`It goes out now from ${sender || "your Gmail"}.`}
         footer={
           <>
             <Button variant="ghost" onClick={() => setConfirmSend(false)}>
               Cancel
             </Button>
             <Button variant="primary" onClick={send}>
-              Send email
+              <Send size={18} strokeWidth={1.9} /> Send email
             </Button>
           </>
         }

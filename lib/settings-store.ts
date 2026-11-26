@@ -3,23 +3,19 @@ import { readJson, writeJson } from "./json-store";
 import type { AppSettings } from "@/types";
 import { DEFAULT_GEMINI_MODEL, normalizeGeminiModelId } from "./gemini-config";
 
-export const DEFAULT_SUBJECT_TEMPLATE =
-  "Research Internship Inquiry — {{professor_name}}, {{university}}";
+export const DEFAULT_SUBJECT_TEMPLATE = "A quick question for you, {{first_name}}";
 
-export const DEFAULT_BODY_TEMPLATE = `Dear Professor {{professor_name}},
-
-I hope this email finds you well. My name is [YOUR NAME] and I am a [YOUR YEAR] undergraduate student at [YOUR UNIVERSITY], majoring in [YOUR MAJOR].
+export const DEFAULT_BODY_TEMPLATE = `Hi {{first_name}},
 
 {{personalized_lines}}
 
-I would be grateful for the opportunity to contribute to your group as a research intern during [TARGET TERM]. I am comfortable with [KEY SKILLS / TOOLS], and I am eager to develop deeper expertise under your mentorship. I have attached my resume for your reference.
+I'm [YOUR NAME], [ONE LINE ON WHO YOU ARE AND WHAT YOU'RE WORKING ON].
 
-Thank you for taking the time to read this email. I would be glad to discuss how I could be useful to your ongoing work at a time convenient for you.
+[YOUR ASK, IN ONE OR TWO SENTENCES: A 20-MINUTE CALL, FEEDBACK, AN INTRO, A ROLE...]
 
-Best regards,
+Thanks for reading,
 [YOUR NAME]
-[YOUR PHONE]
-[YOUR PORTFOLIO / LINKEDIN]`;
+[YOUR LINK]`;
 
 export const DEFAULT_SETTINGS: AppSettings = {
   geminiApiKey: "",

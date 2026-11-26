@@ -89,7 +89,7 @@ function LogTable({ rows, kind }: { rows: LogEntry[]; kind: "sent" | "failed" })
         title={kind === "sent" ? "Nothing sent yet" : "No failed sends"}
         text={
           kind === "sent"
-            ? "Approved emails you send from Professors are listed here with the time and subject."
+            ? "Approved emails you send from People are listed here with the time and subject."
             : "If an email can't go out, it shows up here with the reason."
         }
       />
@@ -102,7 +102,7 @@ function LogTable({ rows, kind }: { rows: LogEntry[]; kind: "sent" | "failed" })
         <thead>
           <tr className="text-label text-muted">
             <th className="h-11 px-4 font-semibold">When</th>
-            <th className="h-11 px-4 font-semibold">Professor</th>
+            <th className="h-11 px-4 font-semibold">Person</th>
             <th className="h-11 px-4 font-semibold">{kind === "sent" ? "Subject" : "Reason"}</th>
           </tr>
         </thead>

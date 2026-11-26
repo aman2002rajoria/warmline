@@ -63,7 +63,7 @@ export function SegmentedLinks({
   activeHref,
   label,
 }: {
-  items: { href: string; label: string }[];
+  items: { href: string; label: string; icon?: React.ReactNode; count?: number }[];
   activeHref: string;
   label: string;
 }) {
@@ -76,7 +76,9 @@ export function SegmentedLinks({
           aria-current={it.href === activeHref ? "page" : undefined}
           className={segItem(it.href === activeHref)}
         >
+          {it.icon}
           {it.label}
+          {it.count ? <span className="ml-0.5 rounded-full bg-accent-500 px-1.5 text-[11px] font-extrabold leading-[18px] text-white">{it.count}</span> : null}
         </Link>
       ))}
     </nav>

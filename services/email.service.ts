@@ -22,6 +22,10 @@ export interface BuildEmailInput {
 export function buildEmail(input: BuildEmailInput) {
   const s = getSettings();
   const vars = {
+    // general names, plus the original ones so older templates keep working
+    name: input.professorName,
+    first_name: (input.professorName || "").trim().split(/\s+/)[0],
+    company: input.university,
     professor_name: input.professorName,
     university: input.university,
     personalized_lines: input.personalizedLines,

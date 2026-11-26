@@ -31,7 +31,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
           researchArea: p.researchArea,
           notes: p.notes,
         },
-        { force },
+        { force, apiKey: req.headers.get("x-gemini-key") || undefined },
       );
       lines = result.lines;
     }

@@ -20,7 +20,7 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "Warmline",
-  description: "Personal research-internship emails to professors, sent from your own Gmail.",
+  description: "Cold outreach that reads warm: personal emails to anyone, approved by you and sent from your own Gmail.",
 };
 
 export const dynamic = "force-dynamic";

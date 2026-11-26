@@ -16,9 +16,9 @@ export interface SetupItem {
 export function getSetupStatus(): { items: SetupItem[]; ready: boolean; toFix: number } {
   if (isTestMode()) {
     const items: SetupItem[] = [
-      { key: "gemini", label: "Gemini key", ok: true, detail: "Simulated in test mode" },
+      { key: "gemini", label: "Gemini key", ok: true, detail: "Test lines, or add your own key in Settings" },
       { key: "gmail", label: "Gmail", ok: true, detail: "Simulated, nothing is emailed" },
-      { key: "resume", label: "Resume", ok: true, detail: "Simulated" },
+      { key: "resume", label: "Attachment", ok: true, detail: "Optional" },
       { key: "template", label: "Template", ok: true, detail: "A sample template" },
     ];
     return { items, ready: true, toFix: 0 };
@@ -53,9 +53,9 @@ export function getSetupStatus(): { items: SetupItem[]; ready: boolean; toFix: n
     },
     {
       key: "resume",
-      label: "Resume",
+      label: "Attachment",
       ok: resumeOk,
-      detail: resumeOk ? "Attached to every email" : "Upload a PDF",
+      detail: resumeOk ? "Attached to every email" : "Optional PDF",
     },
     {
       key: "template",

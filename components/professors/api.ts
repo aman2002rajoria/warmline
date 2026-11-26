@@ -1,4 +1,5 @@
 import type { ExcelImportResult, ProfessorRecord } from "@/types";
+import { keyHeader } from "@/lib/own-key";
 
 /** Thin client for the app's own API routes. Throws with the server's message. */
 async function call<T>(url: string, init?: RequestInit): Promise<T> {
@@ -25,11 +26,11 @@ export const api = {
   list: () =>
     call<{ professors: ProfessorRecord[] }>("/api/professors").then((d) => d.professors),
 
-  /** Ask Gemini for the personal lines and rebuild the draft. */
+  /** Ask Gemini for the personal lines and rebuild the draft. Uses the visitor's own key when they've added one. */
   writeDraft: (id: string, rewrite = false) =>
     call<{ professor: ProfessorRecord }>(
       `/api/professors/${id}/personalize${rewrite ? "?force=1" : ""}`,
-      { method: "POST" },
+      { method: "POST", headers: keyHeader() },
     ).then((d) => d.professor),
 
   update: (id: string, patch: Partial<ProfessorRecord>) =>

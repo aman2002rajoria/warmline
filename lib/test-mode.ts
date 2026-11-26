@@ -35,48 +35,52 @@ export function isTestMode(): boolean {
   }
 }
 
-export const TEST_SUBJECT = "Research internship, summer 2027: {{professor_name}}, {{university}}";
-export const TEST_TEMPLATE = `Dear Professor {{professor_name}},
-
-I'm Riya Sharma, a third-year B.Tech student in Computer Science at NIT Trichy.
+export const TEST_SUBJECT = "A quick question for you, {{first_name}}";
+export const TEST_TEMPLATE = `Hi {{first_name}},
 
 {{personalized_lines}}
 
-I'd be grateful for the chance to work in your group as a research intern from May to July 2027. I'm comfortable with Python, PyTorch and reading papers closely, and I've attached my resume.
+I'm Sameer, and I run Ledgerly, a 12-person fintech team in Bengaluru. We're building a tool that predicts which payment mandates will fail and retries them at the right hour, and we're looking for a few people to shape it with us early.
 
-Thank you for reading. I'd be glad to talk at a time that suits you.
+Would you be open to a 20-minute call in the next couple of weeks? I'll keep it to the point.
 
-Best regards,
-Riya Sharma
-+91 98765 43210
-riyasharma.dev`;
+Thanks,
+Sameer
+Founder, Ledgerly`;
 
 /** What test mode writes instead of calling Gemini. */
 export function fakeLines(p: { researchArea?: string | null; department?: string | null; notes?: string | null }): string {
-  const area = (p.researchArea || p.department || "your group's research").toLowerCase();
-  const note = p.notes ? ` I was especially interested to read about ${p.notes.charAt(0).toLowerCase()}${p.notes.slice(1).replace(/\.$/, "")}.` : "";
-  return `I have been reading about ${area}, and your group's approach to it is close to what I want to work on next.${note} I would like to learn how your lab frames these problems in practice.`;
+  const low = (t: string) => t.charAt(0).toLowerCase() + t.slice(1).replace(/\.$/, "");
+  const note = p.notes ? ` ${p.notes.replace(/\.$/, "")} stuck with me too.` : "";
+  if (p.researchArea) return `I came across your work on ${low(p.researchArea)}, and it's close to the problem we started from.${note}`;
+  if (p.department) return `I've been following what you do as ${/^[aeiou]/i.test(p.department) ? "an" : "a"} ${low(p.department)}, and I think you'd see our problem from a useful angle.${note}`;
+  return `I've been following the work your team is doing, and it's close to the problem we started from.${note}`;
 }
 
+/*
+  Test people: anyone you might write to, not one kind. Field names are the app's originals:
+  professorName = name, university = company, department = role, researchArea = what they work on,
+  labWebsite = a link, notes = your notes.
+*/
 const PEOPLE: Omit<ProfessorRecord, "id" | "createdAt" | "updatedAt" | "finalSubject" | "finalBody" | "personalizedLines">[] = [
-  { professorName: "Ananya Iyer", university: "IISc Bengaluru", email: "ananya.iyer@example.com", department: "Computational and Data Sciences", researchArea: "Graph neural networks for molecular property prediction", labWebsite: "example.com/ananya-lab", notes: "Recent work on drug discovery with very little labelled data", status: "drafted" },
-  { professorName: "Vikram Nair", university: "IIT Madras", email: "vikram.nair@example.com", department: "Computer Science", researchArea: "Speech recognition for Indian languages", labWebsite: null, notes: "Runs an open dataset of Tamil and Malayalam speech", status: "drafted" },
-  { professorName: "Meera Krishnan", university: "IIT Delhi", email: "meera.krishnan@example.com", department: "Electrical Engineering", researchArea: "Low-power hardware for on-device ML", labWebsite: "example.com/meera", notes: null, status: "approved" },
-  { professorName: "Arjun Rao", university: "IIIT Hyderabad", email: "arjun.rao@example.com", department: "Robotics Research Centre", researchArea: "Navigation for low-cost delivery robots", labWebsite: null, notes: null, status: "sent" },
-  { professorName: "Kavya Menon", university: "IIT Bombay", email: "kavya.menon@example.com", department: "Civil Engineering", researchArea: "Satellite data for flood mapping", labWebsite: null, notes: "Worked on the 2024 Assam flood maps", status: "sent" },
-  { professorName: "Sandeep Gupta", university: "IIT Kanpur", email: "sandeep.gupta@example", department: "Mathematics", researchArea: "Optimisation for large-scale learning", labWebsite: null, notes: null, status: "failed" },
-  { professorName: "Neha Bhatt", university: "IISER Pune", email: "neha.bhatt@example.com", department: "Biology", researchArea: "Protein folding simulations", labWebsite: null, notes: null, status: "pending" },
-  { professorName: "Rohan Mehta", university: "BITS Pilani", email: "rohan.mehta@example.com", department: "Economics", researchArea: null, labWebsite: null, notes: null, status: "pending" },
+  { professorName: "Priya Menon", university: "Razorpay", email: "priya.menon@example.com", department: "Product Lead, Subscriptions", researchArea: "Why UPI AutoPay mandates fail at the bank step", labWebsite: "example.com/priya-autopay-talk", notes: "Gave a meetup talk on AutoPay drop-offs in October", status: "drafted" },
+  { professorName: "Kabir Shah", university: "CRED", email: "kabir.shah@example.com", department: "Senior Product Manager", researchArea: "The bill-payments roadmap", labWebsite: null, notes: "Posted about reminders people actually open", status: "drafted" },
+  { professorName: "Meera Iyer", university: "Zepto", email: "meera.iyer@example.com", department: "Head of Partnerships", researchArea: "Partnerships with local brands", labWebsite: "example.com/meera", notes: null, status: "approved" },
+  { professorName: "Arjun Rao", university: "Kisaan Kart", email: "arjun.rao@example.com", department: "Founder, seed-stage agritech", researchArea: "Onboarding kirana owners who have never used an app", labWebsite: null, notes: "Uses voice notes heavily in sales", status: "sent" },
+  { professorName: "Neha Gupta", university: "Swiggy", email: "neha.gupta@example.com", department: "Design Lead", researchArea: "Reorder habits on Instamart", labWebsite: null, notes: "Wrote a long piece on habit design", status: "sent" },
+  { professorName: "Rohan Das", university: "Groww", email: "rohan.das@example", department: "Engineering Manager, Payments", researchArea: "Payments reliability at scale", labWebsite: null, notes: null, status: "failed" },
+  { professorName: "Ananya Sen", university: "The Product Folks podcast", email: "ananya.sen@example.com", department: "Host", researchArea: "Interviews with first-time product managers", labWebsite: null, notes: null, status: "pending" },
+  { professorName: "Vikram Nair", university: "Independent", email: "vikram.nair@example.com", department: "Recruiter for early-stage startups", researchArea: null, labWebsite: null, notes: null, status: "pending" },
 ];
 
 /** Hand-written sample lines for the seeded drafts, so the demo reads like real Gemini output. */
 const SAMPLE_LINES: Record<string, string> = {
-  "Ananya Iyer": "I read your recent work on predicting molecular properties when only a handful of compounds are labelled, and the idea of getting useful signal from so little data stayed with me. I've been trying small graph models on public molecule datasets and would love to learn how your group decides what to label next.",
-  "Vikram Nair": "Your open dataset of Tamil and Malayalam speech is the reason I started looking at speech recognition for Indian languages. I've been training small models on it for a class project, and I'd love to understand how your group handles the code-mixed speech that most benchmarks leave out.",
-  "Meera Krishnan": "Your group's work on running ML on very low-power hardware is close to what I keep running into: my models work on a laptop and fall over on a microcontroller. I'd like to learn how you decide what to cut first.",
-  "Arjun Rao": "I've been following your lab's work on navigation for low-cost delivery robots, especially the focus on cheap sensors over expensive ones. I built a small line-following robot last year and would like to learn how far that idea can go outdoors.",
-  "Kavya Menon": "Your flood maps from the 2024 Assam floods were the first time I saw satellite data used that quickly for people on the ground. I've worked a little with Sentinel-1 images and would like to learn how your group turns them into maps people can act on.",
-  "Sandeep Gupta": "I've been reading about optimisation methods that scale to very large models, and your group's work came up again and again. I'd like to learn how you choose between speed and stability when the model no longer fits on one machine.",
+  "Priya Menon": "I watched your talk on why UPI AutoPay mandates fail at the bank step. It described the exact problem we started from.",
+  "Kabir Shah": "Your post about building reminders people actually open made me rethink how we nudge users before a payment is due.",
+  "Meera Iyer": "The way Zepto has brought local brands onto quick commerce is close to what we want to learn from: small partners, very fast.",
+  "Arjun Rao": "Your post about onboarding kirana owners who have never used an app caught my eye, especially the voice-note approach.",
+  "Neha Gupta": "Your piece on reorder habits on Instamart is the clearest explanation of habit design I've read this year.",
+  "Rohan Das": "I've been reading how your team keeps payments reliable at Groww's scale, and it's the part of our product we worry about most.",
 };
 
 /** Write fresh fixtures to data/test-mode/. */
@@ -91,7 +95,7 @@ export function seedTestData() {
     const id = p.email.replace(/[^a-z0-9]+/g, "-");
     const hasDraft = p.status !== "pending";
     const lines = hasDraft ? SAMPLE_LINES[p.professorName] ?? fakeLines(p) : null;
-    const vars = { professor_name: p.professorName, university: p.university, personalized_lines: lines };
+    const vars = { first_name: p.professorName.split(" ")[0], name: p.professorName, company: p.university, professor_name: p.professorName, university: p.university, personalized_lines: lines };
     const rec: ProfessorRecord = {
       ...p,
       id,
@@ -100,7 +104,7 @@ export function seedTestData() {
       finalBody: hasDraft ? renderTemplate(TEST_TEMPLATE, vars) : null,
       approved: p.status === "approved" || p.status === "sent",
       sentAt: p.status === "sent" ? iso(4 + i * 20) : null,
-      errorMessage: p.status === "failed" ? "No recipients defined: the address has no domain ending (example)." : null,
+      errorMessage: p.status === "failed" ? "No recipients defined: the address has no domain ending (rohan.das@example)." : null,
       createdAt: iso(100 - i),
       updatedAt: iso(50 - i),
     };
