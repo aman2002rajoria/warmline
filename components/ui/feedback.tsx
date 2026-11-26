@@ -89,9 +89,9 @@ export function Toaster() {
         unstyled: true,
         classNames: {
           toast:
-            "flex w-full items-center gap-3 rounded-full bg-ink px-5 py-3 text-[15px] font-medium text-white shadow-float",
+            "flex w-full items-center gap-3 rounded-full bg-ink px-5 py-3 text-[15px] font-medium text-bg shadow-float",
           title: "font-medium",
-          description: "text-white/70",
+          description: "text-bg opacity-70",
           actionButton: "ml-auto font-semibold text-accent-200",
           icon: "hidden",
         },

@@ -151,8 +151,8 @@ export function SettingsClient({ initial, testMode }: { initial: AppSettings; te
           <h1 className="mt-2 text-h1 text-white">Your sender kit</h1>
           <p className="mt-3 max-w-[58ch] text-body-l text-white/90">The template, the file and the signature that go with every email. Keys and sending limits are further down, for later.</p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <a href="/people?new=1" className="btn bg-white text-accent-700 shadow-none hover:bg-white">New campaign</a>
-            <button type="button" className="btn ghost bg-transparent text-white shadow-[inset_0_0_0_1.5px_rgba(255,255,255,.7)] hover:bg-white/10" onClick={() => { setNewTemplate(true); document.getElementById("templates")?.scrollIntoView({ behavior: "smooth" }); }}>
+            <a href="/people?new=1" className="btn !bg-white !text-[#1A3FA8] !shadow-[0_4px_0_rgba(4,12,48,.35)]">New campaign</a>
+            <button type="button" className="btn !bg-transparent !text-white !shadow-[inset_0_0_0_1.5px_rgba(255,255,255,.75)] hover:!bg-white/10" onClick={() => { setNewTemplate(true); document.getElementById("templates")?.scrollIntoView({ behavior: "smooth" }); }}>
               New template
             </button>
           </div>

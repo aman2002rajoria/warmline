@@ -101,7 +101,7 @@ export default function OverviewPage() {
             <h2 className="mt-3 max-w-[26ch] text-h2 text-white">{next.title}</h2>
             <p className="mt-3 max-w-[52ch] text-body text-white/90">{next.text}</p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <ButtonLink href={next.href} className="bg-white text-accent-700 shadow-none hover:bg-white">
+              <ButtonLink href={next.href} className="!bg-white !text-[#1A3FA8] !shadow-[0_4px_0_rgba(4,12,48,.35)]">
                 {next.cta} <ArrowRight size={20} strokeWidth={1.75} />
               </ButtonLink>
               {total === 0 && !isTestMode() ? <TryTestData /> : null}
