@@ -107,7 +107,7 @@ function NewTemplate({ open, onOpenChange, onSave }: { open: boolean; onOpenChan
           ))}
         </div>
         <Textarea ref={ref} rows={10} aria-label="Template body" value={body} onChange={(e) => setBody(e.target.value)} className="text-[15px] leading-relaxed" />
-        {!body.includes("{{personalized_lines}}") ? <p className="text-label text-warning-text">Keep {"{{personalized_lines}}"} somewhere: that's where the personal lines go.</p> : null}
+        {!body.includes("{{personalized_lines}}") ? <p className="text-label text-warning-text">Keep {"{{personalized_lines}}"} somewhere: that&rsquo;s where the personal lines go.</p> : null}
       </div>
     </Modal>
   );
