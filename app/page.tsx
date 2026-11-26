@@ -95,7 +95,7 @@ export default function OverviewPage() {
         {/* Next step: a blue tile, like the portfolio's bands */}
         <section className="rise relative overflow-hidden rounded-l bg-accent-500 p-6 text-white shadow-flat md:col-span-7" style={{ "--i": 4 } as React.CSSProperties}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/art/A5-sent.webp" alt="" width={170} height={170} className="pointer-events-none absolute -bottom-4 right-4 hidden h-[150px] w-auto rotate-[-8deg] drop-shadow-[0_18px_22px_rgba(4,12,48,.45)] sm:block" />
+          <img src="/art/plane.webp" alt="" width={180} height={168} className="pointer-events-none absolute bottom-6 right-6 hidden h-[150px] w-auto drop-shadow-[0_22px_26px_rgba(4,12,48,.5)] sm:block" />
           <div className="sm:pr-[180px]">
             <div className="text-label font-extrabold uppercase tracking-[.08em] text-white/80">Next step</div>
             <h2 className="mt-3 max-w-[26ch] text-h2 text-white">{next.title}</h2>

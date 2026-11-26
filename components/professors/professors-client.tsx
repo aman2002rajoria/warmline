@@ -40,6 +40,8 @@ export function ProfessorsClient({
   initial,
   initialFilter,
   openImport,
+  openNew,
+  openId,
   limits,
   sender,
   testMode,
@@ -47,6 +49,8 @@ export function ProfessorsClient({
   initial: ProfessorRecord[];
   initialFilter: Filter;
   openImport: boolean;
+  openNew?: boolean;
+  openId?: string;
   limits: Limits;
   sender: string;
   testMode: boolean;
@@ -55,12 +59,12 @@ export function ProfessorsClient({
   const [rows, setRows] = useState(initial);
   const [filter, setFilter] = useState<Filter>(initialFilter);
   const [query, setQuery] = useState("");
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(openId ?? null);
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [job, setJob] = useState<Job | null>(null);
   const [confirm, setConfirm] = useState<null | "send" | "delete">(null);
   const [importOpen, setImportOpen] = useState(openImport);
-  const [newOpen, setNewOpen] = useState(false);
+  const [newOpen, setNewOpen] = useState(Boolean(openNew));
   const detailRef = useRef<HTMLDivElement | null>(null);
 
   const counts = useMemo(() => {

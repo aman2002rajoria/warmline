@@ -10,7 +10,7 @@ const FILTERS: Filter[] = ["all", "pending", "drafted", "approved", "scheduled",
 export default function PeoplePage({
   searchParams,
 }: {
-  searchParams: { filter?: string; import?: string };
+  searchParams: { filter?: string; import?: string; new?: string; open?: string };
 }) {
   const s = getSettings();
   const filter = FILTERS.includes(searchParams.filter as Filter)
@@ -21,6 +21,8 @@ export default function PeoplePage({
       initial={listProfessors()}
       initialFilter={filter}
       openImport={searchParams.import === "1"}
+      openNew={searchParams.new === "1"}
+      openId={searchParams.open}
       limits={{ maxPerRun: s.maxPerRun, delaySeconds: s.defaultDelaySeconds }}
       sender={isTestMode() ? "your Gmail (simulated)" : s.gmailEmail}
       testMode={isTestMode()}

@@ -5,6 +5,9 @@ import { ArrowUpRight, BellRing, Briefcase, Building2, CalendarClock, Check, Fil
 import { byName, CHANNEL_LABEL, FACES, followUpText, REPLIES, type ActivityKind } from "@/lib/demo-people";
 import Link from "next/link";
 import { getOwnKey } from "@/lib/own-key";
+import { DEFAULT_PROFILE, getProfile, type Profile } from "@/lib/profile";
+import { getShared, type Shared } from "@/components/shared-attachment";
+import { SignatureCard } from "@/components/signature-card";
 import { toast } from "sonner";
 import type { ProfessorRecord } from "@/types";
 import { fmtDateTime } from "@/lib/format";
@@ -148,11 +151,14 @@ export function DraftPanel({
   }
 
   const [hasKey, setHasKey] = useState(false);
+  const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
+  const [shared, setSharedFile] = useState<Shared>(null);
   useEffect(() => {
-    const read = () => setHasKey(Boolean(getOwnKey()));
+    const read = () => { setHasKey(Boolean(getOwnKey())); setProfile(getProfile()); setSharedFile(getShared()); };
     read();
-    window.addEventListener("warmline-key", read);
-    return () => window.removeEventListener("warmline-key", read);
+    const evs = ["warmline-key", "warmline-profile", "warmline-shared"];
+    evs.forEach((e) => window.addEventListener(e, read));
+    return () => evs.forEach((e) => window.removeEventListener(e, read));
   }, []);
 
   const first = p.professorName.split(" ")[0];
@@ -427,16 +433,25 @@ export function DraftPanel({
                 <div className="rounded-m bg-surface p-5">
                   <div className="border-b border-line pb-3">
                     <div className="text-label text-muted">To {p.email}</div>
-                    <div className="mt-1 font-semibold text-ink">{subject}</div>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <span className="font-semibold text-ink">{subject}</span>
+                      <Badge>AI subject</Badge>
+                    </div>
                   </div>
                   <div className="whitespace-pre-wrap pt-3 text-[15px] leading-relaxed text-ink-2">
                     <Highlighted body={body} lines={lines} />
                   </div>
+                  {profile.signature ? <div className="mt-4"><SignatureCard p={profile} compact /></div> : null}
                 </div>
               )}
               {/* Attachments for this email */}
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1 text-label text-muted"><Paperclip size={14} strokeWidth={1.9} /> Attachments</span>
+                {shared ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-label text-accent-700" title="Shared with every email (Settings)">
+                    <FileText size={13} strokeWidth={1.9} /> {shared.name} <span className="opacity-70">every email</span>
+                  </span>
+                ) : null}
                 {files.map((f) => (
                   <span key={f.name} className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 text-label text-ink-2">
                     <FileText size={13} strokeWidth={1.9} /> {f.name} <span className="text-faint">{Math.max(1, Math.round(f.size / 1024))} KB</span>

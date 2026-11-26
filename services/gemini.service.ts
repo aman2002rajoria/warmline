@@ -1,4 +1,4 @@
-import { isTestMode, fakeLines } from "@/lib/test-mode";
+import { isTestMode, fakeLines, fakeSubject } from "@/lib/test-mode";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getSettings } from "@/lib/settings-store";
 import { getCache, setCache } from "@/lib/cache-store";
@@ -20,6 +20,8 @@ export interface PersonalizationInput {
 
 export interface PersonalizationResult {
   lines: string;
+  /** A subject line written for this person (AI), when there's something specific to point at. */
+  subject?: string;
   model: string;
   generatedAt: string;
   fromCache: boolean;
@@ -42,6 +44,12 @@ STRICT RULES:
 - Do NOT include greetings, sign-offs, the person's name or the ask (the template has those).
 - Keep total output under 50 words.
 - Return ONLY the 2-3 sentences as plain text. No quotes, no bullets, no labels, no markdown.`;
+
+const SUBJECT_PROMPT = `Write ONE email subject line for a cold email to this person.
+- Under 8 words, sentence case, no emojis, no clickbait, no ALL CAPS.
+- Point at the same specific thing the personal lines mention, so it's clearly written for them.
+- It may start with their first name. No "Re:" or "Fwd:".
+Return only the subject line.`;
 
 function buildUserPrompt(p: PersonalizationInput): string {
   const lines = [
@@ -87,7 +95,7 @@ export async function generatePersonalization(
   const ownKey = opts.apiKey?.trim();
   if (isTestMode() && !ownKey) {
     await new Promise((r) => setTimeout(r, 1200));
-    return { lines: fakeLines(input), model: "test-mode", generatedAt: new Date().toISOString(), fromCache: false };
+    return { lines: fakeLines(input), subject: fakeSubject(input), model: "test-mode", generatedAt: new Date().toISOString(), fromCache: false };
   }
 
   if (!opts.force && !ownKey) {
@@ -123,8 +131,19 @@ export async function generatePersonalization(
     const cleaned = sanitize(result.response.text());
     if (!cleaned) throw new Error("Empty response from Gemini.");
 
+    // A short subject line that points at the same hook (best effort: the template's subject is the fallback).
+    let subject: string | undefined;
+    try {
+      const sm = genAI.getGenerativeModel({ model: modelId, systemInstruction: SUBJECT_PROMPT, generationConfig: { temperature: 0.7, maxOutputTokens: 40 } });
+      const sr = await sm.generateContent(`${buildUserPrompt(input)}\n\nThe personal lines you wrote: ${cleaned}`);
+      subject = sanitize(sr.response.text()).replace(/^subject:\s*/i, "").slice(0, 90) || undefined;
+    } catch {
+      subject = undefined;
+    }
+
     const out: PersonalizationResult = {
       lines: cleaned,
+      subject,
       model: modelId,
       generatedAt: new Date().toISOString(),
       fromCache: false,

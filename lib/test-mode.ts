@@ -49,6 +49,16 @@ Thanks,
 Sameer
 Founder, Ledgerly`;
 
+/** A subject that points at the hook, so it reads as written for this one person. */
+export function fakeSubject(p: { professorName: string; researchArea?: string | null; department?: string | null }): string {
+  const first = p.professorName.split(" ")[0];
+  const area = p.researchArea?.replace(/\.$/, "");
+  if (!area) return `A quick question for you, ${first}`;
+  const words = area.split(/\s+/);
+  const short = words.length > 7 ? `${words.slice(0, 7).join(" ")}…` : area;
+  return `${first}, a question about ${short.charAt(0).toLowerCase()}${short.slice(1)}`;
+}
+
 /** What test mode writes instead of calling Gemini. */
 export function fakeLines(p: { researchArea?: string | null; department?: string | null; notes?: string | null }): string {
   const low = (t: string) => t.charAt(0).toLowerCase() + t.slice(1).replace(/\.$/, "");
@@ -77,7 +87,7 @@ export function seedTestData() {
       ...p,
       id,
       personalizedLines: lines,
-      finalSubject: hasDraft ? renderTemplate(TEST_SUBJECT, vars) : null,
+      finalSubject: hasDraft ? fakeSubject(p) : null,
       finalBody: hasDraft ? renderTemplate(TEST_TEMPLATE, vars) : null,
       approved: p.status === "approved" || p.status === "sent",
       sentAt: p.status === "sent" && sentHoursAgo ? iso(sentHoursAgo) : null,
