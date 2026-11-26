@@ -3,6 +3,8 @@
 import { PenLine, Send, Trash2, X } from "lucide-react";
 import type { ProfessorRecord } from "@/types";
 import { Avatar } from "./draft-panel";
+import { REPLIES } from "@/lib/demo-people";
+import { Chip } from "@/components/ui/chip";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/field";
@@ -23,6 +25,7 @@ export function ProfessorList({
   onDelete,
   limits,
   filter,
+  filterBar,
 }: {
   rows: ProfessorRecord[];
   activeId: string | null;
@@ -37,6 +40,7 @@ export function ProfessorList({
   onDelete: () => void;
   limits: Limits;
   filter: Filter;
+  filterBar?: React.ReactNode;
 }) {
   const allChecked = rows.length > 0 && rows.every((r) => checked.has(r.id));
   const someChecked = rows.some((r) => checked.has(r.id));
@@ -102,6 +106,7 @@ export function ProfessorList({
         </p>
       ) : null}
 
+      {filterBar}
       <ul className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
         {rows.map((r) => {
           const active = r.id === activeId;
@@ -133,7 +138,7 @@ export function ProfessorList({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate text-[16px] font-extrabold leading-tight text-ink">{r.professorName}</span>
-                    <StatusChip status={r.status} />
+                    <RowChip r={r} />
                   </div>
                   <div className="mt-0.5 truncate text-body-s text-muted">
                     {[r.department, r.university].filter(Boolean).join(" · ")}
@@ -146,4 +151,12 @@ export function ProfessorList({
       </ul>
     </section>
   );
+}
+
+/** The most useful thing to know about a row: replied, scheduled or a follow-up due, else its status. */
+function RowChip({ r }: { r: ProfessorRecord }) {
+  if (r.status === "sent" && REPLIES.some((x) => x.who === r.professorName)) return <Chip tone="success">Replied</Chip>;
+  if (r.status === "approved" && r.scheduledAt) return <Chip tone="accent">Scheduled</Chip>;
+  if (r.status === "sent" && r.followUpAt && !r.followUpSent) return <Chip tone="warning">Follow up</Chip>;
+  return <StatusChip status={r.status} />;
 }

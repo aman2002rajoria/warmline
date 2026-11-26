@@ -5,7 +5,7 @@ import { ProfessorsClient, type Filter } from "@/components/professors/professor
 
 export const dynamic = "force-dynamic";
 
-const FILTERS: Filter[] = ["all", "pending", "drafted", "approved", "sent", "failed"];
+const FILTERS: Filter[] = ["all", "pending", "drafted", "approved", "scheduled", "sent", "followup", "failed"];
 
 export default function PeoplePage({
   searchParams,

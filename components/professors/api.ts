@@ -33,6 +33,9 @@ export const api = {
       { method: "POST", headers: keyHeader() },
     ).then((d) => d.professor),
 
+  create: (p: Partial<ProfessorRecord>) =>
+    call<{ professor: ProfessorRecord }>("/api/professors", jsonInit("POST", p)).then((d) => d.professor),
+
   update: (id: string, patch: Partial<ProfessorRecord>) =>
     call<{ professor: ProfessorRecord }>(`/api/professors/${id}`, jsonInit("PATCH", patch)).then(
       (d) => d.professor,

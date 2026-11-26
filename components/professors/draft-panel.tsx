@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowUpRight, Briefcase, Building2, Check, KeyRound, Link2, PenLine, RefreshCw, Send, Sparkles, StickyNote, Target } from "lucide-react";
+import { ArrowUpRight, BellRing, Briefcase, Building2, CalendarClock, Check, FileText, Globe, KeyRound, Link2, Linkedin, MessageSquare, Mic, Newspaper, Paperclip, PenLine, Presentation, RefreshCw, Reply as ReplyIcon, Send, Sparkles, StickyNote, Target, Twitter, X } from "lucide-react";
+import { byName, CHANNEL_LABEL, FACES, followUpText, REPLIES, type ActivityKind } from "@/lib/demo-people";
 import Link from "next/link";
 import { getOwnKey } from "@/lib/own-key";
 import { toast } from "sonner";
@@ -30,8 +31,11 @@ function detailsOf(p: ProfessorRecord) {
   ].filter((d): d is { label: string; value: string; icon: JSX.Element } => Boolean(d.value));
 }
 
-/** Faces for the test people (from the Warmline illustrations); everyone else gets an initial. */
-const FACES: Record<string, string> = { "Priya Menon": "/art/P-priya.webp", "Kabir Shah": "/art/P-kabir.webp", "Meera Iyer": "/art/P-meera.webp", "Rohan Das": "/art/P-rohan.webp" };
+const KIND_ICON: Record<ActivityKind, JSX.Element> = {
+  talk: <Presentation {...di} />, post: <MessageSquare {...di} />, article: <FileText {...di} />, news: <Newspaper {...di} />, podcast: <Mic {...di} />,
+};
+const when = (iso?: string | null) =>
+  iso ? new Date(iso).toLocaleString("en-IN", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : "";
 export function Avatar({ name, size = 44 }: { name: string; size?: number }) {
   const src = FACES[name];
   return src ? (
@@ -152,6 +156,44 @@ export function DraftPanel({
   }, []);
 
   const first = p.professorName.split(" ")[0];
+  const extra = byName(p.professorName);
+  const links = { ...(extra?.links ?? {}), ...(p.labWebsite && !extra?.links.website ? { website: p.labWebsite } : {}) };
+  const activity = extra?.activity ?? [];
+  const hook = activity.find((a) => a.hook);
+  const reply = REPLIES.find((r) => r.who === p.professorName);
+  const scheduled = p.status === "approved" && p.scheduledAt ? p.scheduledAt : null;
+  const followDue = p.status === "sent" && !reply && p.followUpAt && !p.followUpSent ? p.followUpAt : null;
+
+  // Scheduling: approved drafts can wait for a chosen time.
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [custom, setCustom] = useState("");
+  const schedule = (iso: string | null) =>
+    run(
+      "approving",
+      () =>
+        api.update(p.id, {
+          personalizedLines: lines, finalSubject: subject, finalBody: body,
+          status: "approved", approved: true, scheduledAt: iso,
+        }),
+      iso ? `Scheduled for ${when(iso)}.${testMode ? " Test mode: nothing will be emailed." : ""}` : "Unscheduled. It's approved and waiting.",
+    ).then(() => setScheduleOpen(false));
+  const soon = (() => {
+    const d = new Date();
+    const at = (days: number, h: number, m = 0) => { const x = new Date(d); x.setDate(x.getDate() + days); x.setHours(h, m, 0, 0); return x.toISOString(); };
+    const mon = (8 - d.getDay()) % 7 || 7;
+    return [
+      { label: "In 2 hours", iso: new Date(Date.now() + 2 * 3600_000).toISOString() },
+      { label: "Tomorrow, 9:30 am", iso: at(1, 9, 30) },
+      { label: "Monday, 10 am", iso: at(mon, 10) },
+    ];
+  })();
+
+  // Attachments for this one email.
+  const files = p.attachments ?? [];
+  const setFiles = (next: { name: string; size: number }[], msg: string) => run("applying", () => api.update(p.id, { attachments: next }), msg);
+
+  // Follow-up for someone who hasn't replied.
+  const nudge = followUpText(first, hook?.text ?? p.researchArea ?? null);
   const canSend = !locked && Boolean(subject.trim()) && Boolean(body.trim());
 
   return (
@@ -167,15 +209,35 @@ export function DraftPanel({
             <h2 className="truncate text-h3 text-ink">{p.professorName}</h2>
             <StatusChip status={p.status} />
           </div>
-          <p className="mt-0.5 truncate text-body-s text-muted">
-            {[p.department, p.university].filter(Boolean).join(" · ")} · {p.email}
-          </p>
+          <div className="mt-0.5 flex min-w-0 items-center gap-2">
+            <p className="truncate text-body-s text-muted">
+              {[p.department, p.university].filter(Boolean).join(" · ")} · {p.email}
+            </p>
+            {links.linkedin || links.x || links.website ? (
+              <span className="flex shrink-0 items-center gap-1">
+                {links.linkedin ? <Social href={links.linkedin} label={`${first} on LinkedIn`}><Linkedin size={14} strokeWidth={1.9} /></Social> : null}
+                {links.x ? <Social href={links.x} label={`${first} on X`}><Twitter size={14} strokeWidth={1.9} /></Social> : null}
+                {links.website ? <Social href={links.website} label={`${first}'s website`}><Globe size={14} strokeWidth={1.9} /></Social> : null}
+              </span>
+            ) : null}
+          </div>
         </div>
         {hasDraft && !isSent ? (
           busy === "sending" ? (
             <Working>Sending from your Gmail</Working>
           ) : (
             <div className="flex flex-wrap items-center gap-2">
+              {scheduled ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1.5 text-label font-semibold text-accent-700">
+                  <CalendarClock size={14} strokeWidth={1.9} /> {when(scheduled)}
+                  <button type="button" onClick={() => schedule(null)} aria-label="Unschedule" className="ml-0.5 rounded-full p-0.5 hover:bg-accent-100" disabled={locked}>
+                    <X size={13} strokeWidth={2} />
+                  </button>
+                </span>
+              ) : null}
+              <Button size="sm" variant="ghost" onClick={() => setScheduleOpen(true)} disabled={!canSend}>
+                <CalendarClock size={16} strokeWidth={1.9} /> {scheduled ? "Reschedule" : "Schedule"}
+              </Button>
               {p.status !== "approved" || dirty ? (
                 <Button size="sm" variant="ghost" onClick={approve} disabled={locked}>
                   <Check size={16} strokeWidth={1.9} />
@@ -194,33 +256,41 @@ export function DraftPanel({
       <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto p-5 md:p-6 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)]">
         {/* Left: what it read, and the AI's lines */}
         <div className="flex min-w-0 flex-col gap-4">
-          <div className="rounded-m bg-surface p-4">
-            <div className="flex items-center justify-between gap-2">
-              <Eyebrow className="text-muted">What it read</Eyebrow>
-              {thin ? <Chip tone="warning">Little to go on</Chip> : null}
-            </div>
-            {details.length ? (
-              <ul className="mt-3 flex flex-col gap-2.5">
-                {details.map((d) => (
-                  <li key={d.label} className="flex gap-2.5">
-                    <span className="mt-0.5 text-accent-600">{d.icon}</span>
+          {activity.length ? (
+            <div className="rounded-m bg-surface p-4">
+              <div className="flex items-center justify-between gap-2">
+                <Eyebrow className="text-muted">Why this line</Eyebrow>
+                <span className="text-label text-faint">{activity.length} recent</span>
+              </div>
+              <ol className="relative mt-3 flex flex-col gap-2 before:absolute before:bottom-3 before:left-[15px] before:top-3 before:w-px before:bg-line">
+                {activity.map((a) => (
+                  <li key={a.text} className={`relative flex gap-3 rounded-s p-2 ${a.hook ? "bg-accent-50 ring-1 ring-accent-200" : ""}`}>
+                    <span className={`relative z-[1] flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full ${a.hook ? "bg-accent-500 text-white" : "bg-card text-ink-2 shadow-flat"}`}>
+                      {KIND_ICON[a.kind]}
+                    </span>
                     <div className="min-w-0">
-                      <div className="text-label text-muted">{d.label}</div>
-                      {d.label === "Link" ? (
-                        <a href={d.value.startsWith("http") ? d.value : `https://${d.value}`} target="_blank" rel="noreferrer" className="link inline-flex items-center gap-0.5 break-all text-body-s">
-                          {d.value} <ArrowUpRight size={14} strokeWidth={1.75} />
+                      <div className="flex flex-wrap items-center gap-x-2 text-label text-muted">
+                        <span className="font-semibold text-ink-2">{a.source}</span>
+                        <span>{a.when}</span>
+                      </div>
+                      {a.url ? (
+                        <a href={a.url} target="_blank" rel="noreferrer" className="mt-0.5 block text-body-s leading-snug text-ink hover:text-accent-700">
+                          {a.text} <ArrowUpRight size={12} strokeWidth={2} className="inline" />
                         </a>
                       ) : (
-                        <div className="break-words text-body-s text-ink-2">{d.value}</div>
+                        <p className="mt-0.5 text-body-s leading-snug text-ink">{a.text}</p>
                       )}
+                      {a.hook ? (
+                        <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-accent-500 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-[.05em] text-white">
+                          <Sparkles size={11} strokeWidth={2.2} /> Used for the hook
+                        </span>
+                      ) : null}
                     </div>
                   </li>
                 ))}
-              </ul>
-            ) : (
-              <p className="mt-3 text-body-s text-ink-2">Only a name and company. Add what they work on, or a note, so the lines can say something specific.</p>
-            )}
-          </div>
+              </ol>
+            </div>
+          ) : null}
 
           {p.status === "failed" && p.errorMessage ? (
             <div className="rounded-m bg-danger-tint p-4">
@@ -239,7 +309,7 @@ export function DraftPanel({
               {busy === "rewriting" ? (
                 <Working className="mt-3">Rewriting from {first}&rsquo;s details</Working>
               ) : editingLines ? (
-                <Textarea className="mt-3 bg-white" rows={5} value={lines} onChange={(e) => setLines(e.target.value)} aria-label="Personal lines" autoFocus />
+                <Textarea className="mt-3 bg-card" rows={5} value={lines} onChange={(e) => setLines(e.target.value)} aria-label="Personal lines" autoFocus />
               ) : (
                 <p className="mt-2 text-body-s leading-relaxed text-ink">{lines || <span className="text-muted">Empty. Rewrite or type your own.</span>}</p>
               )}
@@ -276,6 +346,34 @@ export function DraftPanel({
               ) : null}
             </div>
           ) : null}
+          <div className="rounded-m bg-surface p-4">
+            <div className="flex items-center justify-between gap-2">
+              <Eyebrow className="text-muted">{activity.length ? "From your sheet" : "What it read"}</Eyebrow>
+              {thin && !activity.length ? <Chip tone="warning">Little to go on</Chip> : null}
+            </div>
+            {details.length ? (
+              <ul className="mt-3 flex flex-col gap-2.5">
+                {details.filter((d) => !activity.length || d.label !== "Link").map((d) => (
+                  <li key={d.label} className="flex gap-2.5">
+                    <span className="mt-0.5 text-accent-600">{d.icon}</span>
+                    <div className="min-w-0">
+                      <div className="text-label text-muted">{d.label}</div>
+                      {d.label === "Link" ? (
+                        <a href={d.value.startsWith("http") ? d.value : `https://${d.value}`} target="_blank" rel="noreferrer" className="link inline-flex items-center gap-0.5 break-all text-body-s">
+                          {d.value} <ArrowUpRight size={14} strokeWidth={1.75} />
+                        </a>
+                      ) : (
+                        <div className="break-words text-body-s text-ink-2">{d.value}</div>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-3 text-body-s text-ink-2">Only a name and company. Add what they work on, or a note, so the lines can say something specific.</p>
+            )}
+          </div>
+
         </div>
 
         {/* Right: the email itself, or the empty state */}
@@ -336,13 +434,95 @@ export function DraftPanel({
                   </div>
                 </div>
               )}
+              {/* Attachments for this email */}
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1 text-label text-muted"><Paperclip size={14} strokeWidth={1.9} /> Attachments</span>
+                {files.map((f) => (
+                  <span key={f.name} className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 text-label text-ink-2">
+                    <FileText size={13} strokeWidth={1.9} /> {f.name} <span className="text-faint">{Math.max(1, Math.round(f.size / 1024))} KB</span>
+                    {!isSent ? (
+                      <button type="button" aria-label={`Remove ${f.name}`} className="rounded-full p-0.5 hover:bg-surface-2" disabled={locked}
+                        onClick={() => setFiles(files.filter((x) => x.name !== f.name), "Attachment removed.")}>
+                        <X size={12} strokeWidth={2} />
+                      </button>
+                    ) : null}
+                  </span>
+                ))}
+                {!isSent ? (
+                  <label className="inline-flex cursor-pointer items-center gap-1 rounded-full px-2 py-1 text-label font-semibold text-accent-600 hover:bg-accent-50">
+                    + Attach a file
+                    <input type="file" className="hidden" disabled={locked} onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) setFiles([...files.filter((x) => x.name !== f.name), { name: f.name, size: f.size }], testMode ? `${f.name} attached. Test mode: the file stays on your computer.` : `${f.name} attached.`);
+                      e.target.value = "";
+                    }} />
+                  </label>
+                ) : files.length ? null : <span className="text-label text-faint">None</span>}
+              </div>
+
+              {/* After sending: their reply, or a follow-up when they haven't answered */}
+              {reply ? (
+                <a href="/replies" className="mt-3 flex items-start gap-3 rounded-m bg-success-tint p-4 transition-colors hover:brightness-105">
+                  <ReplyIcon size={18} strokeWidth={1.9} className="mt-0.5 shrink-0 text-success-text" />
+                  <div className="min-w-0">
+                    <div className="text-label font-extrabold text-success-text">Replied on {CHANNEL_LABEL[reply.channel]}</div>
+                    <p className="mt-0.5 text-body-s text-ink">&ldquo;{reply.text}&rdquo;</p>
+                    <span className="mt-1 inline-block text-label font-semibold text-accent-600">Answer it in Replies →</span>
+                  </div>
+                </a>
+              ) : followDue ? (
+                <div className="mt-3 rounded-m bg-warning-tint p-4">
+                  <div className="flex items-center gap-2 text-label font-extrabold text-warning-text">
+                    <BellRing size={15} strokeWidth={1.9} /> No reply yet · follow up {when(followDue)}
+                  </div>
+                  <p className="mt-1.5 text-body-s text-ink">{nudge}</p>
+                  <div className="mt-2.5 flex flex-wrap gap-2">
+                    <Button size="sm" variant="primary" disabled={locked} onClick={() => run("sending", () => api.update(p.id, { followUpSent: true }), testMode ? `Test mode: follow-up to ${first} marked as sent. Nothing was emailed.` : `Follow-up sent to ${first}.`)}>
+                      <Send size={15} strokeWidth={1.9} /> Send follow-up now
+                    </Button>
+                    <span className="self-center text-label text-muted">or leave it: it goes out on its own {when(followDue)}.</span>
+                  </div>
+                </div>
+              ) : p.status === "sent" && p.followUpSent ? (
+                <p className="mt-3 inline-flex items-center gap-1.5 text-label text-muted"><BellRing size={14} strokeWidth={1.9} /> Follow-up sent. Waiting on {first}.</p>
+              ) : null}
+
               <p className="mt-3 text-label text-muted">
-                {isSent ? `Sent ${fmtDateTime(p.sentAt)} from ${sender || "your Gmail"}.` : "Nothing goes out without your click."}
+                {isSent ? `Sent ${fmtDateTime(p.sentAt)} from ${sender || "your Gmail"}.` : scheduled ? `Goes out ${when(scheduled)} from ${sender || "your Gmail"}.` : "Nothing goes out without your click."}
               </p>
             </>
           )}
         </div>
       </div>
+
+      <Modal
+        open={scheduleOpen}
+        onOpenChange={setScheduleOpen}
+        title={`Schedule the email to ${first}`}
+        description="It's approved now and goes out from your Gmail at the time you pick."
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setScheduleOpen(false)}>Cancel</Button>
+            <Button variant="primary" disabled={!custom || locked} onClick={() => schedule(new Date(custom).toISOString())}>
+              <CalendarClock size={18} strokeWidth={1.9} /> Schedule
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-2">
+          {soon.map((o) => (
+            <button key={o.label} type="button" disabled={locked} onClick={() => schedule(o.iso)}
+              className="flex items-center justify-between rounded-m bg-surface px-4 py-3 text-left transition-colors hover:bg-accent-50">
+              <span className="font-semibold text-ink">{o.label}</span>
+              <span className="text-body-s text-muted">{when(o.iso)}</span>
+            </button>
+          ))}
+          <label className="mt-2 flex flex-col gap-1.5 text-label text-muted">
+            Or pick a time
+            <Input type="datetime-local" value={custom} onChange={(e) => setCustom(e.target.value)} aria-label="Send at" />
+          </label>
+        </div>
+      </Modal>
 
       <Modal
         open={confirmSend}
@@ -383,5 +563,13 @@ function Highlighted({ body, lines }: { body: string; lines: string }) {
       </mark>
       {body.slice(i + lines.length)}
     </>
+  );
+}
+
+function Social({ href, label, children }: { href: string; label: string; children: React.ReactNode }) {
+  return (
+    <a href={href} target="_blank" rel="noreferrer" aria-label={label} title={label} className="flex h-6 w-6 items-center justify-center rounded-full bg-surface text-ink-2 transition-colors hover:bg-accent-50 hover:text-accent-700">
+      {children}
+    </a>
   );
 }
